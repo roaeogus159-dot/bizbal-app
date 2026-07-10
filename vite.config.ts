@@ -3,7 +3,9 @@ import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
+// DEPLOY_BASE: GitHub Pages 등 서브경로 배포용 (예: /bizbal-app/). 로컬은 '/'
 export default defineConfig({
+  base: process.env.DEPLOY_BASE || '/',
   plugins: [
     react(),
     VitePWA({
