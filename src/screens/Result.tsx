@@ -97,7 +97,7 @@ export default function Result() {
   return (
     <div className="result">
       <div className="controls result-scroll">
-        <section className="card">
+        <section className="card" data-guide="out-color">
           <div className="result-head">
             <h3>① 휴대폰용 컬러 도안</h3>
             {color && <button className="btn-sm btn-secondary" onClick={() => saveGroup([color])}>저장</button>}
@@ -105,7 +105,7 @@ export default function Result() {
           {color ? <img className="result-img" src={color.url} alt="컬러 도안" /> : <p className="muted pad">생성 중…</p>}
         </section>
 
-        <section className="card">
+        <section className="card" data-guide="out-print">
           <div className="result-head">
             <h3>② 인쇄용 A4 도안 {prints.length > 1 ? `(${prints.length}장)` : ''}</h3>
             {prints.length > 0 && (
@@ -118,7 +118,7 @@ export default function Result() {
             : <p className="muted pad">{building ? '생성 중…' : ''}</p>}
         </section>
 
-        <section className="card">
+        <section className="card" data-guide="out-strand">
           <div className="result-head">
             <h3>③ 세로 줄 순서표 {strands.length > 1 ? `(${strands.length}장)` : ''}</h3>
             {strands.length > 0 && (
@@ -139,7 +139,7 @@ export default function Result() {
 
       {savedMsg && <div className="toast">{savedMsg}</div>}
 
-      <div className="bottom-bar">
+      <div className="bottom-bar" data-guide="actions">
         <button className="btn-secondary" onClick={() => go('convert')}>← 변환 설정</button>
         <button className="btn-primary" disabled={building || all.length === 0} onClick={() => saveGroup(all)}>
           {building ? '생성 중…' : `📥 모두 저장 (${all.length}개 파일)`}

@@ -1,7 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useProject } from './state/store'
 import type { Screen } from './state/store'
 import { decodeImage } from './lib/convert'
+import { GUIDES } from './lib/guides'
+import GuideTour from './components/GuideTour'
 import Home from './screens/Home'
 import Convert from './screens/Convert'
 import Editor from './screens/Editor'
@@ -27,6 +29,12 @@ export default function App() {
   const prevScreen = useProject((s) => s.prevScreen)
   const go = useProject((s) => s.go)
   const setImage = useProject((s) => s.setImage)
+  const [guideOpen, setGuideOpen] = useState(false)
+
+  // 화면이 바뀌면 진행 중이던 가이드 닫기
+  useEffect(() => {
+    setGuideOpen(false)
+  }, [screen])
 
   // 데모/검증용: ?demo=convert|editor|result|library 로 샘플 이미지 자동 로드
   useEffect(() => {
@@ -54,6 +62,11 @@ export default function App() {
           <button className="btn-ghost back" onClick={() => go(back ?? 'home')}>
             ‹ 뒤로
           </button>
+          {GUIDES[screen].length > 0 && (
+            <button className="guide-open-btn" onClick={() => setGuideOpen(true)}>
+              💬 가이드
+            </button>
+          )}
           <h2>{TITLES[screen]}</h2>
           {screen !== 'library' ? (
             <button className="btn-ghost" onClick={() => go('library')} title="색상 라이브러리">
@@ -71,6 +84,9 @@ export default function App() {
         {screen === 'result' && <Result />}
         {screen === 'library' && <Library />}
       </main>
+      {guideOpen && GUIDES[screen].length > 0 && (
+        <GuideTour steps={GUIDES[screen]} onClose={() => setGuideOpen(false)} />
+      )}
     </div>
   )
 }

@@ -38,7 +38,7 @@ export default function PurchasePlan() {
   }
 
   return (
-    <section className="card purchase">
+    <section className="card purchase" data-guide="purchase">
       <div className="purchase-head">
         <h3>🛒 구매 계획</h3>
         <button className="btn-sm btn-primary" onClick={exportCsv}>

@@ -24,7 +24,7 @@ export default function ColorList() {
   if (!grid) return null
 
   return (
-    <section className="color-list card">
+    <section className="color-list card" data-guide="colors">
       <div className="color-list-head">
         <h3>색상 개수표</h3>
         <span className="muted">

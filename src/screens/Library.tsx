@@ -34,7 +34,7 @@ export default function Library() {
     <div className="library">
       <div className="controls">
         <div className="card">
-          <div className="lib-toolbar">
+          <div className="lib-toolbar" data-guide="toolbar">
             <input
               className="search"
               placeholder="색 이름/코드 검색"
@@ -50,7 +50,7 @@ export default function Library() {
               실제 색상 보기
             </label>
           </div>
-          <div className="lib-bulk">
+          <div className="lib-bulk" data-guide="bulk">
             <button
               className="btn-sm btn-secondary"
               onClick={() => s.setCategoryEnabled(BASE_PALETTE.map((c) => c.code), true)}
@@ -69,7 +69,7 @@ export default function Library() {
           </div>
         </div>
 
-        <div className="cat-tabs">
+        <div className="cat-tabs" data-guide="cats">
           {CATS.map((c) => (
             <button key={c} className={`tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>
               {CATEGORY_LABELS[c]}
@@ -79,7 +79,7 @@ export default function Library() {
           ))}
         </div>
 
-        <div className="card">
+        <div className="card" data-guide="list">
           <label className="toggle-sm cat-head">
             <input
               type="checkbox"

@@ -83,7 +83,7 @@ export default function Convert() {
 
   return (
     <div className="split">
-      <div className="preview-area">
+      <div className="preview-area" data-guide="preview">
         <PreviewCanvas />
         {converting && <div className="converting-badge">변환 중…</div>}
         {!converting && s.paintMode === 'expert' && grid && (
@@ -95,7 +95,7 @@ export default function Convert() {
       <div className="controls">
         {/* 초기 크기 모드 */}
         <div className="card">
-          <div className="seg-row">
+          <div className="seg-row" data-guide="size-mode">
             <div className="segmented">
               <button
                 className={s.sizeMode === 'widthCm' ? 'on' : ''}
@@ -147,7 +147,7 @@ export default function Convert() {
           </label>
 
           {/* 가로/세로 스테퍼 */}
-          <div className="wh-row">
+          <div className="wh-row" data-guide="wh">
             <div className="stepper">
               <span>가로</span>
               <button onClick={() => changeW(W - 1)}>−</button>
@@ -170,7 +170,7 @@ export default function Convert() {
           </div>
 
           {/* 지름 */}
-          <div className="chips-row">
+          <div className="chips-row" data-guide="diameter">
             <span>비즈 지름</span>
             {([4, 6, 8] as const).map((d) => (
               <button
@@ -194,7 +194,7 @@ export default function Convert() {
         </div>
 
         {/* 채색 모드 + 재질 미리보기 */}
-        <div className="card">
+        <div className="card" data-guide="paint">
           <div className="seg-row">
             <span>채색 모드</span>
             <div className="segmented">
@@ -267,7 +267,7 @@ export default function Convert() {
       </div>
 
       {/* 하단 고정 바 */}
-      <div className="bottom-bar">
+      <div className="bottom-bar" data-guide="actions">
         <button className="btn-secondary" onClick={() => go('editor')} disabled={!grid}>
           ✏️ 세부 수정
         </button>

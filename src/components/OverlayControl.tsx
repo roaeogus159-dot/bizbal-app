@@ -10,7 +10,7 @@ export default function OverlayControl() {
   if (!image) return null
 
   return (
-    <div className="overlay-ctrl">
+    <div className="overlay-ctrl" data-guide="overlay">
       <button
         className={`overlay-btn ${overlayOn ? 'on' : ''}`}
         onClick={() => setOverlay(!overlayOn)}

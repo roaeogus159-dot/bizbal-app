@@ -107,7 +107,7 @@ export default function Editor() {
 
       <div className="controls">
         <div className="card">
-          <div className="tool-row">
+          <div className="tool-row" data-guide="tools">
             {TOOLS.map((t) => (
               <button
                 key={t.id}
@@ -127,7 +127,7 @@ export default function Editor() {
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
           </p>
 
-          <div className="edit-actions">
+          <div className="edit-actions" data-guide="edit-actions">
             <button className="btn-sm btn-secondary" onClick={selectAll}>전체 선택</button>
             <button className="btn-sm btn-secondary" onClick={() => p.setSelection(new Set())}>
               전체 해제
@@ -151,7 +151,7 @@ export default function Editor() {
         </div>
 
         <div className="card">
-          <div className="replace-row">
+          <div className="replace-row" data-guide="replace">
             <span>
               선택 <strong>{p.selection.size.toLocaleString()}</strong>칸
             </span>
@@ -187,7 +187,7 @@ export default function Editor() {
         </div>
       </div>
 
-      <div className="bottom-bar">
+      <div className="bottom-bar" data-guide="actions">
         <button className="btn-secondary" onClick={() => p.go('convert')}>← 변환 설정</button>
         <button className="btn-primary" onClick={() => p.go('result')}>💾 도안 저장</button>
       </div>
