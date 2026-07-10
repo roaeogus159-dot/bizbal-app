@@ -50,7 +50,7 @@ export const BASE_PALETTE: BeadColor[] = (
     category: c.category as Category,
     finish: c.finish as Finish,
     sizeMm: c.sizeMm,
-    photo: `/beads/${c.code}.jpg`,
+    photo: `${import.meta.env.BASE_URL}beads/${c.code}.jpg`, // 서브경로 배포 대응
   })),
 )
 

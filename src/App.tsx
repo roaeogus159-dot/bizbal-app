@@ -45,7 +45,7 @@ export default function App() {
         go('library')
         return
       }
-      const res = await fetch('/sample.jpg')
+      const res = await fetch(`${import.meta.env.BASE_URL}sample.jpg`)
       const img = await decodeImage(await res.blob())
       setImage(img)
       go(demo as Screen)

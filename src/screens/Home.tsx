@@ -34,7 +34,7 @@ export default function Home() {
   }
 
   const openSample = async () => {
-    const res = await fetch('/sample.jpg')
+    const res = await fetch(`${import.meta.env.BASE_URL}sample.jpg`)
     await openImage(await res.blob())
   }
 
@@ -53,7 +53,7 @@ export default function Home() {
   return (
     <div className="home">
       <div className="home-hero">
-        <img src="/pwa-192.png" alt="" className="home-logo" />
+        <img src={`${import.meta.env.BASE_URL}pwa-192.png`} alt="" className="home-logo" />
         <h1>비즈발 도안 생성기</h1>
         <p className="muted">
           사진을 고르면 비즈발(구슬발) 도안과<br />색상별 필요 개수를 자동으로 계산합니다
