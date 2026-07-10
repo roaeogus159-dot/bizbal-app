@@ -1,5 +1,5 @@
 // ① 사진 선택 & 변환 화면: 미리보기 + 크기/모드/지름 컨트롤 + 색상 개수표
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useProject, useSettings } from '../state/store'
 import { finishedSizeCm } from '../lib/pattern'
 import { BG_LABELS } from '../lib/render'
@@ -30,6 +30,17 @@ export default function Convert() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [disabled, customColors, maxColors, dithering])
 
+  // 전문가 모드: 임계값 초과(변경 권장) 칸 수
+  const deltaE = useProject((p) => p.deltaE)
+  const gridVersion = useProject((p) => p.gridVersion)
+  const expertCount = useMemo(() => {
+    if (s.paintMode !== 'expert' || !deltaE) return 0
+    let n = 0
+    for (let i = 0; i < deltaE.length; i++) if (deltaE[i] > s.expertThreshold) n++
+    return n
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deltaE, s.expertThreshold, s.paintMode, gridVersion])
+
   if (!image) return <p className="pad">사진이 없습니다. 홈에서 사진을 선택해 주세요.</p>
 
   const aspect = image.aspect
@@ -53,6 +64,9 @@ export default function Convert() {
       <div className="preview-area">
         <PreviewCanvas />
         {converting && <div className="converting-badge">변환 중…</div>}
+        {!converting && s.paintMode === 'expert' && grid && (
+          <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
+        )}
       </div>
 
       <div className="controls">
@@ -169,9 +183,20 @@ export default function Convert() {
             </div>
           </div>
           {s.paintMode === 'expert' && (
-            <p className="muted hint">
-              이미지 색과 크게 벗어난 칸이 주황 테두리로 강조됩니다. 세부 수정에서 탭하면 대체 색을 추천해요.
-            </p>
+            <>
+              <p className="muted hint">
+                이미지 색과 크게 벗어난 칸이 주황색으로 강조됩니다 (현재{' '}
+                <strong>{expertCount.toLocaleString()}칸</strong>). 세부 수정에서 탭하면 대체 색을 추천해요.
+              </p>
+              <label className="field-col">
+                강조 임계값 ΔE: <strong>{s.expertThreshold}</strong>{' '}
+                <span className="muted">(낮출수록 더 많은 칸이 강조됩니다)</span>
+                <input
+                  type="range" min={5} max={40} value={s.expertThreshold}
+                  onChange={(e) => s.set('expertThreshold', Number(e.target.value))}
+                />
+              </label>
+            </>
           )}
           <label className="toggle-sm">
             <input

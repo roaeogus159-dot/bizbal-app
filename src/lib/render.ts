@@ -246,21 +246,27 @@ export function drawGrid(
     ctx.stroke()
   }
 
-  // 전문가 모드: ΔE 초과 칸 강조 (주황 테두리 + 빗금)
+  // 전문가 모드: ΔE 초과 칸 강조 (축소 시 반투명 채움, 확대 시 주황 테두리 + 빗금)
   if (opts.highlight) {
     const { deltaE, threshold } = opts.highlight
+    const small = s < 8 // 칸이 작으면 테두리가 안 보이므로 채움으로 표시
     ctx.strokeStyle = '#ff5a00'
+    ctx.fillStyle = 'rgba(255,90,0,0.5)'
     ctx.lineWidth = Math.max(1.5, s * 0.09)
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
         const i = y * W + x
         if (deltaE[i] > threshold) {
-          ctx.strokeRect(tx + x * s + 1, ty + y * s + 1, s - 2, s - 2)
-          if (s >= 12) {
-            ctx.beginPath()
-            ctx.moveTo(tx + x * s + 2, ty + y * s + s - 2)
-            ctx.lineTo(tx + x * s + s - 2, ty + y * s + 2)
-            ctx.stroke()
+          if (small) {
+            ctx.fillRect(tx + x * s, ty + y * s, s, s)
+          } else {
+            ctx.strokeRect(tx + x * s + 1, ty + y * s + 1, s - 2, s - 2)
+            if (s >= 12) {
+              ctx.beginPath()
+              ctx.moveTo(tx + x * s + 2, ty + y * s + s - 2)
+              ctx.lineTo(tx + x * s + s - 2, ty + y * s + 2)
+              ctx.stroke()
+            }
           }
         }
       }
