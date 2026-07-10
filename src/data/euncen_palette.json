@@ -1,0 +1,801 @@
+{
+  "meta": {
+    "store": "은센(eun_cen)",
+    "source_url": "https://smartstore.naver.com/eun_cen/products/10295244971",
+    "hex_note": "HEX는 공식 색상표 스크린샷에서 샘플링한 근사값. 실물과 미세 차이 가능. 투명/반투명/오로라는 반투명·이리데센트 특성상 대표색 1개로 근사.",
+    "size_mm_default": 8,
+    "total": 85,
+    "finish_note": "finish=완성 재질감(불투명/투명/반투명/오로라) 렌더용. sizeMm=실제 지름(기본 8.0, 종류별 미세차 보정용, 줄 길이 계산에 사용)."
+  },
+  "categories": [
+    {
+      "id": "solid",
+      "label": "단색",
+      "colors": [
+        {
+          "code": "BB",
+          "name": "버건디",
+          "hex": "#980307",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "R",
+          "name": "레드",
+          "hex": "#C40906",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "P0",
+          "name": "딸기우유",
+          "hex": "#E8C1C4",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "P1",
+          "name": "연핑크",
+          "hex": "#D999A9",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "P2",
+          "name": "핑크",
+          "hex": "#E66694",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HP",
+          "name": "핫핑크",
+          "hex": "#C91B43",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "CO",
+          "name": "코랄",
+          "hex": "#F27579",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LCO",
+          "name": "연코랄",
+          "hex": "#FD9982",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LO",
+          "name": "연다홍",
+          "hex": "#FDA279",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "O2",
+          "name": "연주황(다홍)",
+          "hex": "#D25227",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "O",
+          "name": "주황",
+          "hex": "#F25101",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "Y",
+          "name": "노랑",
+          "hex": "#E6BC03",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LY",
+          "name": "연노랑",
+          "hex": "#E6BD5F",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "FG",
+          "name": "형광노랑",
+          "hex": "#D5E048",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "MG",
+          "name": "메론그린",
+          "hex": "#89C07A",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LGR",
+          "name": "연두",
+          "hex": "#B7B338",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "GR2",
+          "name": "연초록",
+          "hex": "#6EAC01",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "G",
+          "name": "초록",
+          "hex": "#026A2C",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "B2G",
+          "name": "연청록",
+          "hex": "#59AFA3",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "BG",
+          "name": "청록",
+          "hex": "#0DBCB1",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "SD",
+          "name": "소다",
+          "hex": "#7EC1C8",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LS",
+          "name": "연하늘",
+          "hex": "#6699B6",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "S",
+          "name": "하늘",
+          "hex": "#609CD8",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "BL",
+          "name": "블루",
+          "hex": "#042FC9",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "SB",
+          "name": "스머프블루",
+          "hex": "#02A9DA",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "DN",
+          "name": "다크네이비",
+          "hex": "#203053",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "NG",
+          "name": "네이비그레이",
+          "hex": "#748FB0",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LP",
+          "name": "연보라",
+          "hex": "#9A8FC8",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "PP",
+          "name": "보라",
+          "hex": "#9D7CC8",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "DP",
+          "name": "진보라",
+          "hex": "#8039C7",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LM",
+          "name": "라이트모브",
+          "hex": "#B56E8F",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "MV",
+          "name": "모브",
+          "hex": "#784B76",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "PL",
+          "name": "플럼",
+          "hex": "#89214B",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "SK",
+          "name": "살구",
+          "hex": "#EBC2B4",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "DSK",
+          "name": "다크살구",
+          "hex": "#E4B198",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LB",
+          "name": "베이지브라운",
+          "hex": "#B09881",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "RB",
+          "name": "황토색",
+          "hex": "#CA8404",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "BK",
+          "name": "브릭브라운",
+          "hex": "#993614",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "BR",
+          "name": "진브라운",
+          "hex": "#492A1C",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "K",
+          "name": "다크카키",
+          "hex": "#38380C",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "B",
+          "name": "블랙",
+          "hex": "#070707",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "DG",
+          "name": "다크그레이",
+          "hex": "#535E5F",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "LG",
+          "name": "라이트그레이",
+          "hex": "#A0A3A0",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "W",
+          "name": "화이트",
+          "hex": "#F2F1EC",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "IV",
+          "name": "아이보리",
+          "hex": "#E7E4C8",
+          "category": "solid",
+          "enabled": true,
+          "finish": "opaque",
+          "sizeMm": 8.0
+        }
+      ]
+    },
+    {
+      "id": "transparent",
+      "label": "투명",
+      "colors": [
+        {
+          "code": "TR",
+          "name": "투명레드",
+          "hex": "#DB0403",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TP",
+          "name": "투명핑크",
+          "hex": "#E19FBE",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TN",
+          "name": "투명연그린",
+          "hex": "#7FBE02",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TG",
+          "name": "투명그린",
+          "hex": "#076D02",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TS",
+          "name": "투명청록",
+          "hex": "#09A7B2",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TB",
+          "name": "투명블루",
+          "hex": "#6B92BB",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TB2",
+          "name": "투명딥블루",
+          "hex": "#0323D1",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TO",
+          "name": "투명주황",
+          "hex": "#D46305",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TY",
+          "name": "투명노랑",
+          "hex": "#C8C11E",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TW",
+          "name": "투명화이트",
+          "hex": "#D7D5DF",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TU",
+          "name": "투명자주",
+          "hex": "#D01E7F",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "TV",
+          "name": "투명보라",
+          "hex": "#8C68C4",
+          "category": "transparent",
+          "enabled": false,
+          "finish": "transparent",
+          "sizeMm": 8.0
+        }
+      ]
+    },
+    {
+      "id": "semi",
+      "label": "반투명",
+      "colors": [
+        {
+          "code": "HTR",
+          "name": "반투명레드",
+          "hex": "#BD0203",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTP1",
+          "name": "반투명연핑크",
+          "hex": "#D39397",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTP2",
+          "name": "반투명핑크",
+          "hex": "#E38893",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTN",
+          "name": "반투명연그린",
+          "hex": "#86B10C",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTG",
+          "name": "반투명그린",
+          "hex": "#039A50",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTO",
+          "name": "반투명오렌지(형광)",
+          "hex": "#FD8C1A",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTA",
+          "name": "반투명아쿠아",
+          "hex": "#82CAC2",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTS",
+          "name": "반투명하늘",
+          "hex": "#51B1F4",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTU",
+          "name": "반투명자주",
+          "hex": "#BA2474",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTV",
+          "name": "반투명보라",
+          "hex": "#820D96",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTB",
+          "name": "반투명블루",
+          "hex": "#0B31C2",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTY",
+          "name": "반투명노랑",
+          "hex": "#CDA501",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "HTW",
+          "name": "반투명화이트",
+          "hex": "#E7E3E0",
+          "category": "semi",
+          "enabled": false,
+          "finish": "semi",
+          "sizeMm": 8.0
+        }
+      ]
+    },
+    {
+      "id": "aurora",
+      "label": "오로라",
+      "colors": [
+        {
+          "code": "AR",
+          "name": "오로라레드",
+          "hex": "#A11128",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "ARO",
+          "name": "오로라레드오렌지",
+          "hex": "#B51815",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AHP",
+          "name": "오로라핫핑크",
+          "hex": "#D81054",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AP2",
+          "name": "오로라핑크",
+          "hex": "#D16291",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AP1",
+          "name": "오로라연핑크",
+          "hex": "#E2A0BB",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AO",
+          "name": "오로라오렌지",
+          "hex": "#EC8118",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AE",
+          "name": "오로라에메랄드",
+          "hex": "#0F9982",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AG",
+          "name": "오로라그린",
+          "hex": "#20AF68",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "ASB",
+          "name": "오로라스머프",
+          "hex": "#0774C1",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AS",
+          "name": "오로라연스머프",
+          "hex": "#0E9BDC",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "APP",
+          "name": "오로라보라",
+          "hex": "#A075C1",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "ALP",
+          "name": "오로라연보라",
+          "hex": "#B686D1",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AW",
+          "name": "오로라화이트",
+          "hex": "#C4CBD5",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "ATW",
+          "name": "오로라투명",
+          "hex": "#CCD1E8",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        },
+        {
+          "code": "AB",
+          "name": "오로라블랙",
+          "hex": "#243A54",
+          "category": "aurora",
+          "enabled": false,
+          "finish": "aurora",
+          "sizeMm": 8.0
+        }
+      ]
+    }
+  ]
+}
