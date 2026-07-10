@@ -1,15 +1,18 @@
 /* 비즈발 도안 생성기 — 모바일 우선 전역 스타일 */
 :root {
-  --bg: #f6f5f2;
+  /* 파스텔 핑크 러블리 테마 */
+  --bg: #faf3f6;
   --card: #ffffff;
-  --text: #23252d;
-  --muted: #82858f;
-  --border: #e3e1dc;
-  --primary: #4056c8;
-  --primary-dark: #32439e;
+  --text: #33262c;
+  --muted: #97848c;
+  --border: #eedde5;
+  --primary: #d9628d;
+  --primary-dark: #c04a76;
+  --primary-soft: #fce7ef; /* 선택된 칩/토글 배경 */
+  --primary-soft-border: #f2c3d6;
   --warn: #c2410c;
   --radius: 14px;
-  --shadow: 0 1px 4px rgba(20, 22, 40, 0.08);
+  --shadow: 0 1px 4px rgba(90, 40, 60, 0.08);
 }
 
 * {
@@ -66,8 +69,8 @@ ul {
   gap: 4px;
   padding: 8px 10px;
   padding-top: calc(8px + env(safe-area-inset-top));
-  background: var(--card);
-  border-bottom: 1px solid var(--border);
+  background: #fce8f0;
+  border-bottom: 1px solid #f3cddd;
   flex: none;
 }
 .app-header h2 {
@@ -129,6 +132,7 @@ ul {
   gap: 28px;
   padding: 24px;
   text-align: center;
+  background: linear-gradient(165deg, #fdeaf2 0%, #f8ecf8 55%, #ecebfb 100%);
 }
 .home-hero h1 { font-size: 26px; margin: 14px 0 8px; }
 .home-logo {
@@ -158,7 +162,7 @@ ul {
   flex: none;
   height: 44vh;
   min-height: 220px;
-  background: #eceae5;
+  background: #f4e9ee;
 }
 .preview-wrap {
   position: absolute;
@@ -174,7 +178,7 @@ ul {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(20, 22, 40, 0.78);
+  background: rgba(200, 85, 130, 0.88);
   color: #fff;
   font-size: 13px;
   font-weight: 600;
@@ -328,8 +332,8 @@ details.card summary {
 }
 .chip.on {
   border-color: var(--primary);
-  background: #eef1ff;
-  color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
 }
 .size-info {
   margin: 2px 0 0;
@@ -388,9 +392,9 @@ details.card summary {
 .guide-open-btn {
   font-size: 13.5px;
   font-weight: 700;
-  color: var(--primary);
-  background: #eef1ff;
-  border: 1.5px solid #c9d2f5;
+  color: var(--primary-dark);
+  background: #ffffff;
+  border: 1.5px solid var(--primary-soft-border);
   border-radius: 999px;
   padding: 5px 11px;
   white-space: nowrap;
@@ -627,8 +631,8 @@ details.card summary {
 .tool-btn span { font-size: 19px; }
 .tool-btn.on {
   border-color: var(--primary);
-  background: #eef1ff;
-  color: var(--primary);
+  background: var(--primary-soft);
+  color: var(--primary-dark);
 }
 .edit-actions {
   display: flex;
@@ -669,7 +673,7 @@ details.card summary {
   bottom: 90px;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(20, 22, 40, 0.88);
+  background: rgba(96, 46, 66, 0.92);
   color: #fff;
   padding: 10px 18px;
   border-radius: 999px;

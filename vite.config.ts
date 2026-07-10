@@ -25,8 +25,8 @@ export default defineConfig({
         short_name: '비즈발',
         description: '사진을 비즈발(구슬발) 도안으로 변환하고 색상별 개수를 계산합니다',
         lang: 'ko',
-        theme_color: '#1E2233',
-        background_color: '#F6F5F2',
+        theme_color: '#FCE8F0',
+        background_color: '#FAF3F6',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
