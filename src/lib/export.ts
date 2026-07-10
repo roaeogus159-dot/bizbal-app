@@ -352,11 +352,16 @@ export function dateStamp(): string {
   return `${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}`
 }
 
+/** 공유시트는 모바일(iOS/Android)에서만 — 데스크톱 Chrome은 OS 공유창이 떠서 다운로드를 막음 */
+export function shouldUseShare(): boolean {
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+}
+
 /** 파일들을 iOS 공유시트(사진 저장) 또는 다운로드로 저장 */
 export async function saveFiles(items: { blob: Blob; name: string }[]): Promise<'shared' | 'downloaded'> {
   const files = items.map((i) => new File([i.blob], i.name, { type: 'image/png' }))
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (nav.share && nav.canShare?.({ files })) {
+  if (shouldUseShare() && nav.share && nav.canShare?.({ files })) {
     try {
       await nav.share({ files })
       return 'shared'

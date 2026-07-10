@@ -384,6 +384,52 @@ details.card summary {
 .color-count { font-weight: 700; font-variant-numeric: tabular-nums; }
 .finish-tag { font-size: 12px; }
 
+/* ---------- 구매 계획 ---------- */
+.purchase-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.purchase-head h3 { font-size: 16px; }
+.purchase-total {
+  margin: 0;
+  background: var(--bg);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 14.5px;
+}
+.purchase-sum { color: var(--primary); font-size: 16px; }
+.purchase details summary {
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 0;
+}
+.purchase details {
+  border-top: 1px solid var(--bg);
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.purchase-cell {
+  min-width: 46px;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.purchase-cost { min-width: 64px; font-weight: 600; }
+.purchase .color-row { gap: 6px; }
+.purchase .color-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+
 /* ---------- 하단 바 ---------- */
 .bottom-bar {
   flex: none;

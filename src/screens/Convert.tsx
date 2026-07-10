@@ -1,5 +1,5 @@
 // ① 사진 선택 & 변환 화면: 미리보기 + 크기/모드/지름 컨트롤 + 색상 개수표
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useProject, useSettings } from '../state/store'
 import { finishedSizeCm } from '../lib/pattern'
 import { BG_LABELS } from '../lib/render'
@@ -7,6 +7,7 @@ import type { Background } from '../lib/render'
 import PreviewCanvas from '../components/PreviewCanvas'
 import ColorList from '../components/ColorList'
 import OverlayControl from '../components/OverlayControl'
+import PurchasePlan from '../components/PurchasePlan'
 
 export default function Convert() {
   const s = useSettings()
@@ -41,6 +42,26 @@ export default function Convert() {
     return n
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deltaE, s.expertThreshold, s.paintMode, gridVersion])
+
+  // 목표 가로/총 개수를 바꾸면 1초 뒤 자동 적용
+  const autoApplyFirst = useRef(true)
+  useEffect(() => {
+    if (autoApplyFirst.current) {
+      autoApplyFirst.current = false
+      return
+    }
+    if (!image) return
+    const t = setTimeout(() => {
+      if (
+        !hasEdits() ||
+        window.confirm('가로/세로를 바꾸면 세부 수정 내용이 사라집니다. 계속할까요?')
+      ) {
+        applyAutoSize()
+      }
+    }, 1000)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [s.widthCm, s.budget])
 
   if (!image) return <p className="pad">사진이 없습니다. 홈에서 사진을 선택해 주세요.</p>
 
@@ -166,8 +187,9 @@ export default function Convert() {
           </div>
 
           <p className="size-info">
-            {W}×{H}칸 = 총 <strong>{(W * H).toLocaleString()}개</strong> · 완성 약{' '}
-            <strong>{wCm.toFixed(1)} × {hCm.toFixed(1)} cm</strong>
+            {W}×{H}칸 = 총 <strong>{(W * H).toLocaleString()}개</strong>
+            <br />
+            약 <strong>{wCm.toFixed(1)} × {hCm.toFixed(1)} cm</strong>
           </p>
         </div>
 
@@ -240,6 +262,7 @@ export default function Convert() {
           </label>
         </details>
 
+        <PurchasePlan />
         <ColorList />
       </div>
 

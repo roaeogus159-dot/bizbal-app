@@ -3,6 +3,7 @@ import { useMemo } from 'react'
 import { useProject, useSettings } from '../state/store'
 import { fullPalette } from '../lib/palette'
 import { buildLegend } from '../lib/pattern'
+import BeadSwatch from './BeadSwatch'
 
 export default function ColorList() {
   const grid = useProject((s) => s.grid)
@@ -45,11 +46,7 @@ export default function ColorList() {
           return (
             <li key={e.paletteIdx} className="color-row">
               <span className="legend-no">{e.number}</span>
-              {photoView && c.photo ? (
-                <img className="swatch swatch-photo" src={c.photo} alt={c.name} loading="lazy" />
-              ) : (
-                <span className="swatch" style={{ background: c.hex }} />
-              )}
+              <BeadSwatch color={c} />
               <span className="color-name">
                 {c.name} <span className="muted">{c.code}</span>
               </span>

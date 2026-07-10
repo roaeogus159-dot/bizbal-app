@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CustomColor } from '../lib/palette'
+import type { Category, CustomColor } from '../lib/palette'
 import { fullPalette, enabledIndices, paletteArrays } from '../lib/palette'
 import type { SourceImage } from '../lib/convert'
 import { autoSize, convertInWorker } from '../lib/convert'
@@ -26,6 +26,10 @@ interface SettingsState {
   expertThreshold: number // 전문가 모드 ΔE 강조 임계값
   disabled: Record<string, boolean> // 변환에서 제외한 색 코드
   customColors: CustomColor[]
+  // 구매 계획 (은센 기준: 100개입 1,000원, 카테고리별 수정 가능)
+  packSize: number
+  packPrices: Record<Category, number>
+  setPackPrice: (cat: Category, price: number) => void
   set: <K extends keyof SettingsState>(k: K, v: SettingsState[K]) => void
   toggleColor: (code: string, on: boolean) => void
   setCategoryEnabled: (codes: string[], on: boolean) => void
@@ -51,6 +55,10 @@ export const useSettings = create<SettingsState>()(
       expertThreshold: 20,
       disabled: {},
       customColors: [],
+      packSize: 100,
+      packPrices: { solid: 1000, transparent: 1000, semi: 1000, aurora: 1000, custom: 1000 },
+      setPackPrice: (cat, price) =>
+        set((st) => ({ packPrices: { ...st.packPrices, [cat]: Math.max(0, price) } })),
       set: (k, v) => set({ [k]: v } as Pick<SettingsState, typeof k>),
       toggleColor: (code, on) =>
         set((st) => {
