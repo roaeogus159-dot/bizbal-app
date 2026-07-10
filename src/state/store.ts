@@ -117,12 +117,16 @@ interface ProjectState {
   converting: boolean
   convertMs: number
   gridVersion: number // 캔버스 리렌더 트리거
+  // 원본 사진 오버레이 (직접 대조용)
+  overlayOn: boolean
+  overlayAlpha: number
   // 에디터
   tool: Tool
   selection: Set<number>
   undoStack: UndoEntry[]
   redoStack: UndoEntry[]
 
+  setOverlay: (on: boolean, alpha?: number) => void
   go: (s: Screen) => void
   setImage: (img: SourceImage) => void
   setSize: (W: number, H: number) => void
@@ -193,10 +197,15 @@ export const useProject = create<ProjectState>()((set, get) => ({
   converting: false,
   convertMs: 0,
   gridVersion: 0,
+  overlayOn: false,
+  overlayAlpha: 0.5,
   tool: 'point',
   selection: new Set(),
   undoStack: [],
   redoStack: [],
+
+  setOverlay: (on, alpha) =>
+    set((st) => ({ overlayOn: on, overlayAlpha: alpha ?? st.overlayAlpha })),
 
   go: (s) => set((st) => ({ screen: s, prevScreen: st.screen })),
 

@@ -7,6 +7,7 @@ import { rgbToLab, deltaE2000 } from '../lib/color'
 import PreviewCanvas from '../components/PreviewCanvas'
 import PaletteSheet from '../components/PaletteSheet'
 import BeadSwatch from '../components/BeadSwatch'
+import OverlayControl from '../components/OverlayControl'
 
 const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: 'pan', label: '이동', icon: '✋' },
@@ -101,6 +102,7 @@ export default function Editor() {
         {s.paintMode === 'expert' && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
         )}
+        <OverlayControl />
       </div>
 
       <div className="controls">

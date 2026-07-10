@@ -182,6 +182,34 @@ ul {
   border-radius: 999px;
 }
 .expert-badge { background: rgba(214, 82, 0, 0.88); }
+.overlay-ctrl {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 4px 6px;
+  box-shadow: var(--shadow);
+}
+.overlay-btn {
+  font-size: 13px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: var(--muted);
+}
+.overlay-btn.on {
+  background: var(--primary);
+  color: #fff;
+}
+.overlay-slider {
+  width: 92px;
+  accent-color: var(--primary);
+}
 .controls {
   flex: 1;
   min-height: 0;

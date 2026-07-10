@@ -6,6 +6,7 @@ import { BG_LABELS } from '../lib/render'
 import type { Background } from '../lib/render'
 import PreviewCanvas from '../components/PreviewCanvas'
 import ColorList from '../components/ColorList'
+import OverlayControl from '../components/OverlayControl'
 
 export default function Convert() {
   const s = useSettings()
@@ -67,6 +68,7 @@ export default function Convert() {
         {!converting && s.paintMode === 'expert' && grid && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
         )}
+        <OverlayControl />
       </div>
 
       <div className="controls">

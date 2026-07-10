@@ -26,6 +26,9 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
   const selection = useProject((s) => s.selection)
   const deltaE = useProject((s) => s.deltaE)
   const tool = useProject((s) => s.tool)
+  const image = useProject((s) => s.image)
+  const overlayOn = useProject((s) => s.overlayOn)
+  const overlayAlpha = useProject((s) => s.overlayAlpha)
   const customColors = useSettings((s) => s.customColors)
   const materialView = useSettings((s) => s.materialView)
   const background = useSettings((s) => s.background)
@@ -38,6 +41,8 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
   const fittedFor = useRef('')
   const overview = useRef<HTMLCanvasElement | null>(null)
   const overviewFor = useRef(-1)
+  const srcCanvas = useRef<HTMLCanvasElement | null>(null) // 원본 사진 (오버레이용)
+  const srcCanvasFor = useRef<object | null>(null)
   const raf = useRef(0)
   const mag = useRef<{ x: number; y: number } | null>(null) // 돋보기(CSS px)
 
@@ -96,6 +101,19 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
         overview.current = makeOverviewBitmap(grid, W, H, palette)
         overviewFor.current = gridVersion
       }
+      // 원본 사진 캔버스 (이미지 바뀔 때 1회 생성)
+      if (overlayOn && image && srcCanvasFor.current !== image) {
+        const sc = document.createElement('canvas')
+        sc.width = image.w
+        sc.height = image.h
+        sc.getContext('2d')!.putImageData(new ImageData(image.rgba.slice(), image.w, image.h), 0, 0)
+        srcCanvas.current = sc
+        srcCanvasFor.current = image
+      }
+      const overlay =
+        overlayOn && srcCanvas.current
+          ? { source: srcCanvas.current, alpha: overlayAlpha }
+          : null
       drawGrid(ctx, cw, ch, dpr, grid, W, H, palette, view.current, {
         mode: materialView ? 'material' : 'flat',
         bg,
@@ -106,6 +124,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
           paintMode === 'expert' && deltaE
             ? { deltaE, threshold: expertThreshold }
             : null,
+        overlay,
       })
       // 돋보기
       if (mag.current) {
@@ -132,6 +151,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
           showGridLines: true,
           selection: editable ? selection : null,
           highlight: null,
+          overlay,
         })
         ctx.restore()
         ctx.save()
@@ -164,7 +184,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
     }
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable])
+  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable, overlayOn, overlayAlpha, image])
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {

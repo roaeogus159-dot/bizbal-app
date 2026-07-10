@@ -189,6 +189,8 @@ export interface DrawOptions {
   showGridLines?: boolean
   selection?: Set<number> | null
   highlight?: { deltaE: Float32Array; threshold: number } | null
+  /** 원본 사진 오버레이 (직접 대조하며 색 수정용) */
+  overlay?: { source: CanvasImageSource; alpha: number } | null
 }
 
 /** 메인 그리드 드로잉 (뷰포트 컬링, dpr 반영) */
@@ -228,6 +230,15 @@ export function drawGrid(
         ctx.drawImage(sp, tx + x * s, ty + y * s, s, s)
       }
     }
+  }
+
+  // 원본 사진 오버레이: 격자 영역에 정확히 맞춰 반투명 합성
+  if (opts.overlay) {
+    ctx.save()
+    ctx.globalAlpha = opts.overlay.alpha
+    ctx.imageSmoothingEnabled = true
+    ctx.drawImage(opts.overlay.source, tx, ty, W * s, H * s)
+    ctx.restore()
   }
 
   // 격자 보조선 (편집 뷰 고배율)
