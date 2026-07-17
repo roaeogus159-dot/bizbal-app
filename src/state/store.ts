@@ -131,6 +131,7 @@ interface ProjectState {
   converting: boolean
   convertMs: number
   gridVersion: number // 캔버스 리렌더 트리거
+  convertedKey: string | null // 현재 grid를 만든 설정 키
   // 원본 사진 오버레이 (직접 대조용)
   overlayOn: boolean
   overlayAlpha: number
@@ -146,7 +147,8 @@ interface ProjectState {
   setImage: (img: SourceImage) => void
   setSize: (W: number, H: number) => void
   applyAutoSize: () => void
-  requestConvert: () => void
+  /** preserveEdits=true면 수정한 칸(grid≠baseGrid)은 유지하고 나머지만 재변환 */
+  requestConvert: (preserveEdits?: boolean) => void
   hasEdits: () => boolean
   // 에디터 액션
   setTool: (t: Tool) => void
@@ -163,8 +165,21 @@ interface ProjectState {
   setProjectName: (name: string) => void
   restore: (
     img: SourceImage, W: number, H: number, grid: Uint16Array,
-    opts?: { id?: string; name?: string },
+    opts?: { id?: string; name?: string; baseGrid?: Uint16Array },
   ) => void
+}
+
+/** 현재 설정 기준 변환 키 — grid가 이 설정으로 만들어졌는지 판별 (불필요한 재변환 방지) */
+export function currentConvertKey(W: number, H: number): string {
+  const s = useSettings.getState()
+  return JSON.stringify([
+    W, H,
+    s.paintMode === 'manual',
+    Object.keys(s.disabled).sort(),
+    s.customColors.filter((c) => !c.deleted).length,
+    s.maxColors,
+    s.dithering,
+  ])
 }
 
 function newProjectMeta() {
@@ -186,11 +201,28 @@ const strokeBefore = new Map<number, number>() // 실제로 색이 바뀐 셀 �
 let strokePath: number[] = [] // 포인터가 지나간 셀 순서 (되짚기 취소용)
 const strokeSet = new Set<number>() // strokePath 멤버십
 
+function u16ToB64(arr: Uint16Array): string {
+  const bytes = new Uint8Array(arr.buffer.slice(0))
+  let bin = ''
+  const CHUNK = 0x8000
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+  }
+  return btoa(bin)
+}
+
+function b64ToU16(b64: string): Uint16Array {
+  const bin = atob(b64)
+  const bytes = new Uint8Array(bin.length)
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
+  return new Uint16Array(bytes.buffer)
+}
+
 /** 즉시 저장. 성공 여부 반환 (중간 저장 버튼·자동저장 공용) */
 function doAutosave(): boolean {
-  const { image, W, H, grid, projectId, projectName } = useProject.getState()
+  const { image, W, H, grid, baseGrid, projectId, projectName } = useProject.getState()
   if (!image || !grid) return false
-  // 내 작업 목록(IndexedDB) — 용량 여유가 커서 여러 작업 보관
+  // 내 작업 목록(IndexedDB) — baseGrid도 함께 저장해 복원 후에도 '수정 칸' 구분 유지
   void putProject({
     id: projectId,
     name: projectName,
@@ -198,19 +230,19 @@ function doAutosave(): boolean {
     W, H,
     dataUrl: image.dataUrl,
     grid: grid.buffer.slice(0) as ArrayBuffer,
+    base: baseGrid ? (baseGrid.buffer.slice(0) as ArrayBuffer) : undefined,
   }).catch(() => {})
   // 빠른 '이어하기' 슬롯 (localStorage, 큰 도안은 생략)
   if (grid.length <= AUTOSAVE_MAX_CELLS) {
     try {
-      const bytes = new Uint8Array(grid.buffer.slice(0))
-      let bin = ''
-      const CHUNK = 0x8000
-      for (let i = 0; i < bytes.length; i += CHUNK) {
-        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
-      }
       localStorage.setItem(
         'bizbal-project',
-        JSON.stringify({ dataUrl: image.dataUrl, W, H, grid: btoa(bin), savedAt: Date.now() }),
+        JSON.stringify({
+          dataUrl: image.dataUrl, W, H,
+          grid: u16ToB64(grid),
+          base: baseGrid ? u16ToB64(baseGrid) : undefined,
+          savedAt: Date.now(),
+        }),
       )
     } catch {
       // localStorage 용량 초과는 무시 (IndexedDB에는 저장됨)
@@ -224,15 +256,18 @@ function scheduleAutosave() {
   autosaveTimer = setTimeout(doAutosave, 800)
 }
 
-export function loadAutosave(): { dataUrl: string; W: number; H: number; grid: Uint16Array; savedAt: number } | null {
+export function loadAutosave(): {
+  dataUrl: string; W: number; H: number; grid: Uint16Array; baseGrid?: Uint16Array; savedAt: number
+} | null {
   try {
     const raw = localStorage.getItem('bizbal-project')
     if (!raw) return null
     const p = JSON.parse(raw)
-    const bin = atob(p.grid)
-    const bytes = new Uint8Array(bin.length)
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i)
-    return { ...p, grid: new Uint16Array(bytes.buffer) }
+    return {
+      ...p,
+      grid: b64ToU16(p.grid),
+      baseGrid: p.base ? b64ToU16(p.base) : undefined,
+    }
   } catch {
     return null
   }
@@ -252,6 +287,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
   converting: false,
   convertMs: 0,
   gridVersion: 0,
+  convertedKey: null,
   overlayOn: false,
   overlayAlpha: 0.5,
   tool: 'point',
@@ -289,20 +325,39 @@ export const useProject = create<ProjectState>()((set, get) => ({
     get().setSize(W, H)
   },
 
-  requestConvert: () => {
-    const { image, W, H } = get()
+  requestConvert: (preserveEdits = false) => {
+    const { image, W, H, grid: oldGrid, baseGrid: oldBase } = get()
     if (!image || W < 1 || H < 1) return
+    // 수정 칸 스냅샷 (같은 W×H 재변환에서만 의미 있음)
+    let keep: { idx: Uint32Array; color: Uint16Array } | null = null
+    if (preserveEdits && oldGrid && oldBase && oldGrid.length === W * H) {
+      const idxs: number[] = []
+      for (let i = 0; i < oldGrid.length; i++) if (oldGrid[i] !== oldBase[i]) idxs.push(i)
+      if (idxs.length > 0) {
+        keep = {
+          idx: new Uint32Array(idxs),
+          color: new Uint16Array(idxs.map((i) => oldGrid[i])),
+        }
+      }
+    }
+    const applyKeep = (g: Uint16Array) => {
+      if (!keep) return
+      for (let i = 0; i < keep.idx.length; i++) g[keep.idx[i]] = keep.color[i]
+    }
     // 직접 채우기 모드: 매칭 없이 빈 칸 격자만 생성
     if (useSettings.getState().paintMode === 'manual') {
       clearTimeout(convertTimer)
       const grid = new Uint16Array(W * H).fill(EMPTY)
+      const base = grid.slice() // 자동(빈) 상태 기준 — keep 적용 전에 확보
+      applyKeep(grid)
       set((st) => ({
         grid,
-        baseGrid: grid.slice(),
+        baseGrid: base,
         cellRgb: null,
         deltaE: null,
         converting: false,
         gridVersion: st.gridVersion + 1,
+        convertedKey: currentConvertKey(W, H),
         selection: new Set(),
         undoStack: [],
         redoStack: [],
@@ -323,14 +378,17 @@ export const useProject = create<ProjectState>()((set, get) => ({
       const { lab, rgb, map } = paletteArrays(pal, idxs)
       const res = await convertInWorker(image, W, H, lab, rgb, map, s.maxColors, s.dithering)
       if (!res) return // 더 새로운 요청이 대체함
+      const base = res.grid.slice() // 자동 변환 결과 기준 — keep 적용 전에 확보
+      applyKeep(res.grid) // '세부 수정 유지' 재변환: 수정 칸 복원 (base와 달라 여전히 수정으로 인식)
       set((st) => ({
         grid: res.grid,
-        baseGrid: res.grid.slice(),
+        baseGrid: base,
         cellRgb: res.cellRgb,
         deltaE: res.deltaE,
         converting: false,
         convertMs: res.ms,
         gridVersion: st.gridVersion + 1,
+        convertedKey: currentConvertKey(get().W, get().H),
         selection: new Set(),
         undoStack: [],
         redoStack: [],
@@ -339,7 +397,15 @@ export const useProject = create<ProjectState>()((set, get) => ({
     }, 200)
   },
 
-  hasEdits: () => get().undoStack.length > 0 || get().redoStack.length > 0,
+  // 실제로 자동 결과와 다른 칸이 있는지 (undo 스택뿐 아니라 복원된 수정도 인식)
+  hasEdits: () => {
+    const { grid, baseGrid } = get()
+    if (!grid || !baseGrid || grid.length !== baseGrid.length) {
+      return get().undoStack.length > 0
+    }
+    for (let i = 0; i < grid.length; i++) if (grid[i] !== baseGrid[i]) return true
+    return false
+  },
 
   setTool: (t) => set({ tool: t }),
   setSelection: (sel) => set({ selection: sel }),
@@ -486,10 +552,14 @@ export const useProject = create<ProjectState>()((set, get) => ({
       ...(opts?.id ? { projectId: opts.id } : { projectId: newProjectMeta().projectId }),
       projectName: opts?.name ?? newProjectMeta().projectName,
       image: img, W, H,
-      grid, baseGrid: grid.slice(),
+      grid,
+      // base가 있으면 그걸로 → 복원 후에도 수정 칸(grid≠base) 구분 유지. 없으면 grid 자체를 base로
+      baseGrid: opts?.baseGrid ?? grid.slice(),
       cellRgb: null, deltaE: null,
       selection: new Set(), undoStack: [], redoStack: [], recentColors: [],
       gridVersion: st.gridVersion + 1,
+      // 복원된 grid는 그대로 신뢰 → 열자마자 재변환으로 덮어쓰지 않게 키를 현재 설정으로
+      convertedKey: currentConvertKey(W, H),
       screen: 'convert', prevScreen: st.screen,
     })),
 }))

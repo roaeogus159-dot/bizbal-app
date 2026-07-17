@@ -69,7 +69,7 @@ export default function Home() {
     try {
       const res = await fetch(saved.dataUrl)
       const img = await decodeImage(await res.blob())
-      restore(img, saved.W, saved.H, saved.grid)
+      restore(img, saved.W, saved.H, saved.grid, { baseGrid: saved.baseGrid })
     } finally {
       setBusy(false)
     }

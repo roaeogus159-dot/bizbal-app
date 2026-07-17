@@ -53,7 +53,10 @@ export default function Projects() {
     try {
       const res = await fetch(e.dataUrl)
       const img = await decodeImage(await res.blob())
-      restore(img, e.W, e.H, new Uint16Array(e.grid), { id: e.id, name: e.name })
+      restore(img, e.W, e.H, new Uint16Array(e.grid), {
+        id: e.id, name: e.name,
+        baseGrid: e.base ? new Uint16Array(e.base) : undefined,
+      })
     } catch {
       alert('작업을 여는 데 실패했어요.')
     } finally {

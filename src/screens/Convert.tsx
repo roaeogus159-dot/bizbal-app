@@ -1,6 +1,6 @@
 // ① 사진 선택 & 변환 화면: 미리보기 + 크기/모드/지름 컨트롤 + 색상 개수표
-import { useEffect, useMemo, useRef } from 'react'
-import { useProject, useSettings } from '../state/store'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useProject, useSettings, currentConvertKey } from '../state/store'
 import { finishedSizeCm } from '../lib/pattern'
 import { BG_LABELS } from '../lib/render'
 import type { Background } from '../lib/render'
@@ -22,15 +22,30 @@ export default function Convert() {
   const hasEdits = useProject((p) => p.hasEdits)
   const go = useProject((p) => p.go)
 
-  // 팔레트·옵션이 바뀌면 재변환
+  // 팔레트·옵션이 실제로 바뀐 경우에만 재변환
+  // (예전엔 화면 진입 시 무조건 재변환해서, 저장된 작업을 열면 세부 수정이 덮어써지는 버그가 있었음)
+  // 세부 수정이 있으면 자동 재변환하지 않고 [유지/포함/취소] 선택 모달을 띄운다.
   const disabled = useSettings((st) => st.disabled)
   const customColors = useSettings((st) => st.customColors)
   const maxColors = useSettings((st) => st.maxColors)
   const dithering = useSettings((st) => st.dithering)
+  const convertedKey = useProject((p) => p.convertedKey)
+  const declinedKey = useRef<string | null>(null)
+  const [reconvertAsk, setReconvertAsk] = useState<string | null>(null) // 바뀐 설정 키
   useEffect(() => {
-    if (image) requestConvert()
+    if (!image || !grid) return
+    const key = currentConvertKey(W, H)
+    if (key === convertedKey || key === declinedKey.current) {
+      if (key === convertedKey) setReconvertAsk(null)
+      return
+    }
+    if (!hasEdits()) {
+      requestConvert()
+      return
+    }
+    setReconvertAsk(key) // 수정 있음 → 버튼으로 선택
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [disabled, customColors, maxColors, dithering])
+  }, [disabled, customColors, maxColors, dithering, convertedKey, grid])
 
   // 전문가 모드: 임계값 초과(변경 권장) 칸 수
   const deltaE = useProject((p) => p.deltaE)
@@ -44,12 +59,11 @@ export default function Convert() {
   }, [deltaE, s.expertThreshold, s.paintMode, gridVersion])
 
   // 목표 가로/총 개수를 바꾸면 1초 뒤 자동 적용
-  const autoApplyFirst = useRef(true)
+  // (값 비교로 실행 — StrictMode 이중 실행에도 안전)
+  const prevAuto = useRef({ w: s.widthCm, b: s.budget })
   useEffect(() => {
-    if (autoApplyFirst.current) {
-      autoApplyFirst.current = false
-      return
-    }
+    if (prevAuto.current.w === s.widthCm && prevAuto.current.b === s.budget) return
+    prevAuto.current = { w: s.widthCm, b: s.budget }
     if (!image) return
     const t = setTimeout(() => {
       if (
@@ -287,6 +301,47 @@ export default function Convert() {
         <PurchasePlan />
         <ColorList />
       </div>
+
+      {/* 설정 변경 시 재변환 선택 모달 (세부 수정이 있을 때만) */}
+      {reconvertAsk && (
+        <div className="sheet-backdrop">
+          <div className="modal">
+            <h3>색상/옵션 설정이 바뀌었어요</h3>
+            <p className="muted">
+              다시 변환하면 <strong>세부 수정 사항이 사라집니다.</strong> 어떻게 할까요?
+            </p>
+            <button
+              className="btn-primary modal-btn"
+              onClick={() => {
+                setReconvertAsk(null)
+                requestConvert(true)
+              }}
+            >
+              ✅ 세부 수정 사항 유지
+              <small>수정한 칸은 그대로 두고, 나머지만 다시 변환</small>
+            </button>
+            <button
+              className="btn-secondary modal-btn"
+              onClick={() => {
+                setReconvertAsk(null)
+                requestConvert()
+              }}
+            >
+              ♻️ 세부 수정 사항 포함
+              <small>수정한 칸도 포함해 전부 다시 변환 (수정 사라짐)</small>
+            </button>
+            <button
+              className="btn-ghost"
+              onClick={() => {
+                declinedKey.current = reconvertAsk
+                setReconvertAsk(null)
+              }}
+            >
+              취소 (지금 상태 유지)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 하단 고정 바 */}
       <div className="bottom-bar" data-guide="actions">

@@ -7,7 +7,8 @@ export interface SavedProject {
   W: number
   H: number
   dataUrl: string // 원본 사진 축소본
-  grid: ArrayBuffer // Uint16Array 버퍼
+  grid: ArrayBuffer // Uint16Array 버퍼 (수정 반영된 현재 도안)
+  base?: ArrayBuffer // 자동 변환 기준 — 있으면 복원 후에도 수정 칸을 구분 가능
 }
 
 const DB_NAME = 'bizbal'

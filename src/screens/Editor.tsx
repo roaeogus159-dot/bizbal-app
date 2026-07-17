@@ -32,12 +32,12 @@ export default function Editor() {
     setTimeout(() => setToast(''), 2500)
   }
 
-  // 하단 색상 바: 최근에 고른 색이 맨 앞, 그 뒤로 도안에 쓰인 색(개수 많은 순)
-  const usedColors = useMemo(() => {
+  // 하단 색상 바: "내가 고른 색"(최근 순) / "자동 변환 색"(개수 많은 순) 구분
+  const stripColors = useMemo(() => {
     const legend = p.grid ? buildLegend(p.grid).map((e) => e.paletteIdx) : []
-    const recent = p.recentColors.filter((i) => palette[i])
-    const rest = legend.filter((i) => !recent.includes(i))
-    return [...recent, ...rest]
+    const picked = p.recentColors.filter((i) => palette[i])
+    const auto = legend.filter((i) => !picked.includes(i))
+    return { picked, auto }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [p.grid, p.gridVersion, p.recentColors, palette])
 
@@ -219,7 +219,7 @@ export default function Editor() {
             </button>
           </div>
 
-          {/* 사용 색상 바: [＋]=팔레트에서 색 고르기, [∅]=지우개, 최근 고른 색이 맨 앞 */}
+          {/* 사용 색상 바: [＋]=팔레트에서 색 고르기, [∅]=지우개 · 내가 고른 색 / 자동 변환 색 구분 */}
           <div className="used-strip" data-guide="used-colors">
             <button
               className="used-swatch add-swatch"
@@ -235,20 +235,42 @@ export default function Editor() {
             >
               ∅
             </button>
-            {usedColors.map((idx) => {
-              const c = palette[idx]
-              if (!c) return null
-              return (
-                <button
-                  key={idx}
-                  className={`used-swatch ${currentColor === idx ? 'on' : ''}`}
-                  onClick={() => onStripTap(idx)}
-                  title={`${c.name} (${c.code})`}
-                >
-                  <BeadSwatch color={c} size={30} />
-                </button>
-              )
-            })}
+            {stripColors.picked.length > 0 && (
+              <span className="strip-group strip-picked">
+                <span className="strip-label">내가 고른</span>
+                {stripColors.picked.map((idx) => {
+                  const c = palette[idx]
+                  return (
+                    <button
+                      key={idx}
+                      className={`used-swatch ${currentColor === idx ? 'on' : ''}`}
+                      onClick={() => onStripTap(idx)}
+                      title={`${c.name} (${c.code})`}
+                    >
+                      <BeadSwatch color={c} size={30} />
+                    </button>
+                  )
+                })}
+              </span>
+            )}
+            {stripColors.auto.length > 0 && (
+              <span className="strip-group">
+                <span className="strip-label">자동 변환</span>
+                {stripColors.auto.map((idx) => {
+                  const c = palette[idx]
+                  return (
+                    <button
+                      key={idx}
+                      className={`used-swatch ${currentColor === idx ? 'on' : ''}`}
+                      onClick={() => onStripTap(idx)}
+                      title={`${c.name} (${c.code})`}
+                    >
+                      <BeadSwatch color={c} size={30} />
+                    </button>
+                  )
+                })}
+              </span>
+            )}
           </div>
 
           {s.paintMode === 'expert' && (
