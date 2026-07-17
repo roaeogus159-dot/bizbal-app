@@ -5,6 +5,7 @@ import { fullPalette, enabledIndices, paletteArrays, EMPTY } from '../lib/palett
 import type { SourceImage } from '../lib/convert'
 import { autoSize, convertInWorker } from '../lib/convert'
 import type { Background } from '../lib/render'
+import { putProject } from '../lib/db'
 
 // ---------- 설정 + 팔레트 상태 (localStorage 영속) ----------
 
@@ -104,7 +105,7 @@ export const useSettings = create<SettingsState>()(
 
 // ---------- 프로젝트 상태 (메모리) ----------
 
-export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library'
+export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects'
 export type Tool = 'pan' | 'point' | 'brush' | 'magic' | 'eyedrop'
 
 interface UndoEntry {
@@ -116,6 +117,8 @@ interface UndoEntry {
 interface ProjectState {
   screen: Screen
   prevScreen: Screen
+  projectId: string // 내 작업 목록에서 이 작업을 식별
+  projectName: string
   image: SourceImage | null
   W: number
   H: number
@@ -155,7 +158,20 @@ interface ProjectState {
   undo: () => void
   redo: () => void
   resetEdits: () => void
-  restore: (img: SourceImage, W: number, H: number, grid: Uint16Array) => void
+  setProjectName: (name: string) => void
+  restore: (
+    img: SourceImage, W: number, H: number, grid: Uint16Array,
+    opts?: { id?: string; name?: string },
+  ) => void
+}
+
+function newProjectMeta() {
+  const d = new Date()
+  const p = (n: number) => String(n).padStart(2, '0')
+  return {
+    projectId: `p${Date.now()}`,
+    projectName: `작업 ${p(d.getMonth() + 1)}/${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`,
+  }
 }
 
 let convertTimer: ReturnType<typeof setTimeout> | undefined
@@ -170,23 +186,35 @@ const strokeSet = new Set<number>() // strokePath 멤버십
 
 /** 즉시 저장. 성공 여부 반환 (중간 저장 버튼·자동저장 공용) */
 function doAutosave(): boolean {
-  const { image, W, H, grid } = useProject.getState()
-  if (!image || !grid || grid.length > AUTOSAVE_MAX_CELLS) return false
-  try {
-    const bytes = new Uint8Array(grid.buffer.slice(0))
-    let bin = ''
-    const CHUNK = 0x8000
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+  const { image, W, H, grid, projectId, projectName } = useProject.getState()
+  if (!image || !grid) return false
+  // 내 작업 목록(IndexedDB) — 용량 여유가 커서 여러 작업 보관
+  void putProject({
+    id: projectId,
+    name: projectName,
+    savedAt: Date.now(),
+    W, H,
+    dataUrl: image.dataUrl,
+    grid: grid.buffer.slice(0) as ArrayBuffer,
+  }).catch(() => {})
+  // 빠른 '이어하기' 슬롯 (localStorage, 큰 도안은 생략)
+  if (grid.length <= AUTOSAVE_MAX_CELLS) {
+    try {
+      const bytes = new Uint8Array(grid.buffer.slice(0))
+      let bin = ''
+      const CHUNK = 0x8000
+      for (let i = 0; i < bytes.length; i += CHUNK) {
+        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+      }
+      localStorage.setItem(
+        'bizbal-project',
+        JSON.stringify({ dataUrl: image.dataUrl, W, H, grid: btoa(bin), savedAt: Date.now() }),
+      )
+    } catch {
+      // localStorage 용량 초과는 무시 (IndexedDB에는 저장됨)
     }
-    localStorage.setItem(
-      'bizbal-project',
-      JSON.stringify({ dataUrl: image.dataUrl, W, H, grid: btoa(bin), savedAt: Date.now() }),
-    )
-    return true
-  } catch {
-    return false // 용량 초과 등 (자동저장은 부가 기능)
   }
+  return true
 }
 
 function scheduleAutosave() {
@@ -211,6 +239,7 @@ export function loadAutosave(): { dataUrl: string; W: number; H: number; grid: U
 export const useProject = create<ProjectState>()((set, get) => ({
   screen: 'home',
   prevScreen: 'home',
+  ...newProjectMeta(),
   image: null,
   W: 0,
   H: 0,
@@ -236,6 +265,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
 
   setImage: (img) => {
     set({
+      ...newProjectMeta(), // 새 사진 = 새 작업으로 목록에 쌓임
       image: img, grid: null, baseGrid: null, cellRgb: null, deltaE: null,
       selection: new Set(), undoStack: [], redoStack: [], recentColors: [],
     })
@@ -443,13 +473,20 @@ export const useProject = create<ProjectState>()((set, get) => ({
     scheduleAutosave()
   },
 
-  // 자동저장 복원: 변환 없이 저장된 grid 그대로 사용
-  restore: (img, W, H, grid) =>
+  setProjectName: (name) => {
+    set({ projectName: name })
+    scheduleAutosave()
+  },
+
+  // 저장된 작업 복원: 변환 없이 저장된 grid 그대로 사용
+  restore: (img, W, H, grid, opts) =>
     set((st) => ({
+      ...(opts?.id ? { projectId: opts.id } : { projectId: newProjectMeta().projectId }),
+      projectName: opts?.name ?? newProjectMeta().projectName,
       image: img, W, H,
       grid, baseGrid: grid.slice(),
       cellRgb: null, deltaE: null,
-      selection: new Set(), undoStack: [], redoStack: [],
+      selection: new Set(), undoStack: [], redoStack: [], recentColors: [],
       gridVersion: st.gridVersion + 1,
       screen: 'convert', prevScreen: st.screen,
     })),

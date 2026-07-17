@@ -136,9 +136,9 @@ export default function Editor() {
 
   const saveNow = () => {
     if (p.saveNow()) {
-      showToast('중간 저장 완료! 홈 → [최근 작업 이어하기]로 언제든 복구돼요')
+      showToast('중간 저장 완료! 홈 → [내 작업 목록]에서 언제든 열 수 있어요')
     } else {
-      showToast('도안이 너무 커서 저장할 수 없어요 (20만 칸 이하만 지원)')
+      showToast('저장할 작업이 없어요')
     }
   }
 

@@ -9,6 +9,7 @@ import Convert from './screens/Convert'
 import Editor from './screens/Editor'
 import Result from './screens/Result'
 import Library from './screens/Library'
+import Projects from './screens/Projects'
 
 const TITLES: Record<Screen, string> = {
   home: '비즈발 도안 생성기',
@@ -16,12 +17,14 @@ const TITLES: Record<Screen, string> = {
   editor: '세부 수정',
   result: '도안 결과',
   library: '색상 라이브러리',
+  projects: '내 작업 목록',
 }
 
 const BACK: Partial<Record<Screen, Screen>> = {
   convert: 'home',
   editor: 'convert',
   result: 'editor',
+  projects: 'home',
 }
 
 export default function App() {
@@ -83,6 +86,7 @@ export default function App() {
         {screen === 'editor' && <Editor />}
         {screen === 'result' && <Result />}
         {screen === 'library' && <Library />}
+        {screen === 'projects' && <Projects />}
       </main>
       {guideOpen && GUIDES[screen].length > 0 && (
         <GuideTour steps={GUIDES[screen]} onClose={() => setGuideOpen(false)} />

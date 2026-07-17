@@ -750,6 +750,50 @@ details.card summary {
 }
 .cat-head { padding-bottom: 8px; border-bottom: 1px solid var(--bg); }
 .form-col { display: flex; flex-direction: column; gap: 12px; }
+.pad-h { padding: 0 4px; }
+
+/* ---------- 내 작업 목록 ---------- */
+.proj-row {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+.proj-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.proj-thumb {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #fff;
+  image-rendering: pixelated;
+  flex: none;
+}
+.proj-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.proj-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.proj-info .muted { font-size: 12.5px; }
+.proj-current { color: var(--primary); font-size: 12.5px; }
+.proj-actions {
+  display: flex;
+  flex: none;
+}
+.proj-actions .btn-ghost { font-size: 17px; padding: 6px; }
 
 /* ---------- 데스크톱 (2단) ---------- */
 @media (min-width: 900px) {
