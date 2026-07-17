@@ -647,6 +647,29 @@ details.card summary {
 }
 .replace-row > span:first-child { flex: 1; }
 
+/* 사용 중인 색상 바 (빠른 색 선택) */
+.used-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bg);
+}
+.used-swatch {
+  padding: 3px;
+  border-radius: 50%;
+  border: 2.5px solid transparent;
+  line-height: 0;
+}
+.used-swatch.on {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+.used-swatch .swatch, .used-swatch .swatch-photo {
+  width: 30px;
+  height: 30px;
+}
+
 /* ---------- 결과 ---------- */
 .result {
   flex: 1;

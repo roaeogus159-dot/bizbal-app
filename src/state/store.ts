@@ -145,6 +145,10 @@ interface ProjectState {
   setTool: (t: Tool) => void
   setSelection: (sel: Set<number>) => void
   applyColor: (cells: number[], colorIdx: number) => void
+  /** 실시간 칠하기: 드래그 중 즉시 반영, strokeCommit 시 한 번의 행동으로 기록 */
+  strokePaint: (cells: number[], colorIdx: number) => void
+  strokeCommit: () => void
+  saveNow: () => boolean
   undo: () => void
   redo: () => void
   resetEdits: () => void
@@ -156,26 +160,33 @@ let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 
 const AUTOSAVE_MAX_CELLS = 200_000
 
+// 진행 중인 칠하기 스트로크의 원래 색 (셀 → 이전 팔레트 인덱스)
+const strokeBefore = new Map<number, number>()
+
+/** 즉시 저장. 성공 여부 반환 (중간 저장 버튼·자동저장 공용) */
+function doAutosave(): boolean {
+  const { image, W, H, grid } = useProject.getState()
+  if (!image || !grid || grid.length > AUTOSAVE_MAX_CELLS) return false
+  try {
+    const bytes = new Uint8Array(grid.buffer.slice(0))
+    let bin = ''
+    const CHUNK = 0x8000
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
+    }
+    localStorage.setItem(
+      'bizbal-project',
+      JSON.stringify({ dataUrl: image.dataUrl, W, H, grid: btoa(bin), savedAt: Date.now() }),
+    )
+    return true
+  } catch {
+    return false // 용량 초과 등 (자동저장은 부가 기능)
+  }
+}
+
 function scheduleAutosave() {
   clearTimeout(autosaveTimer)
-  autosaveTimer = setTimeout(() => {
-    const { image, W, H, grid } = useProject.getState()
-    if (!image || !grid || grid.length > AUTOSAVE_MAX_CELLS) return
-    try {
-      const bytes = new Uint8Array(grid.buffer.slice(0))
-      let bin = ''
-      const CHUNK = 0x8000
-      for (let i = 0; i < bytes.length; i += CHUNK) {
-        bin += String.fromCharCode(...bytes.subarray(i, i + CHUNK))
-      }
-      localStorage.setItem(
-        'bizbal-project',
-        JSON.stringify({ dataUrl: image.dataUrl, W, H, grid: btoa(bin), savedAt: Date.now() }),
-      )
-    } catch {
-      // 용량 초과 등은 무시 (자동저장은 부가 기능)
-    }
-  }, 800)
+  autosaveTimer = setTimeout(doAutosave, 800)
 }
 
 export function loadAutosave(): { dataUrl: string; W: number; H: number; grid: Uint16Array; savedAt: number } | null {
@@ -277,6 +288,41 @@ export const useProject = create<ProjectState>()((set, get) => ({
   setTool: (t) => set({ tool: t }),
   setSelection: (sel) => set({ selection: sel }),
 
+  strokePaint: (cells, colorIdx) => {
+    const { grid } = get()
+    if (!grid) return
+    let changed = false
+    for (const c of cells) {
+      if (!strokeBefore.has(c) && grid[c] !== colorIdx) {
+        strokeBefore.set(c, grid[c])
+        grid[c] = colorIdx
+        changed = true
+      }
+    }
+    if (changed) set((st) => ({ gridVersion: st.gridVersion + 1 }))
+  },
+
+  strokeCommit: () => {
+    if (strokeBefore.size === 0) return
+    const { grid } = get()
+    if (!grid) {
+      strokeBefore.clear()
+      return
+    }
+    const cells = new Uint32Array(strokeBefore.keys())
+    const before = new Uint16Array(strokeBefore.values())
+    const after = new Uint16Array(cells.length)
+    for (let i = 0; i < cells.length; i++) after[i] = grid[cells[i]]
+    strokeBefore.clear()
+    set((st) => ({
+      undoStack: [...st.undoStack.slice(-99), { cells, before, after }],
+      redoStack: [],
+    }))
+    scheduleAutosave()
+  },
+
+  saveNow: () => doAutosave(),
+
   applyColor: (cells, colorIdx) => {
     const { grid } = get()
     if (!grid || cells.length === 0) return
@@ -322,13 +368,25 @@ export const useProject = create<ProjectState>()((set, get) => ({
     scheduleAutosave()
   },
 
+  // 초기화도 하나의 행동으로 기록 → 되돌리기로 취소 가능
   resetEdits: () => {
-    const { baseGrid } = get()
-    if (!baseGrid) return
+    const { grid, baseGrid } = get()
+    if (!grid || !baseGrid) return
+    const idxs: number[] = []
+    for (let i = 0; i < grid.length; i++) if (grid[i] !== baseGrid[i]) idxs.push(i)
+    if (idxs.length === 0) {
+      set({ selection: new Set() })
+      return
+    }
+    const entry: UndoEntry = {
+      cells: new Uint32Array(idxs),
+      before: new Uint16Array(idxs.map((i) => grid[i])),
+      after: new Uint16Array(idxs.map((i) => baseGrid[i])),
+    }
+    for (const i of idxs) grid[i] = baseGrid[i]
     set((st) => ({
-      grid: baseGrid.slice(),
       selection: new Set(),
-      undoStack: [],
+      undoStack: [...st.undoStack.slice(-99), entry],
       redoStack: [],
       gridVersion: st.gridVersion + 1,
     }))

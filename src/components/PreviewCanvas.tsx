@@ -9,13 +9,15 @@ interface Props {
   editable?: boolean
   onCellTap?: (idx: number) => void
   onBrushCells?: (idxs: number[]) => void
+  /** 브러시 드래그가 끝났을 때 (손을 떼거나 핀치 시작) — 스트로크 확정용 */
+  onBrushEnd?: () => void
 }
 
 const TAP_MS = 350
 const TAP_DIST = 8
 const LONGPRESS_MS = 450
 
-export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Props) {
+export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -223,6 +225,11 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
     const p = toLocal(e)
     pointers.current.set(e.pointerId, p)
     if (pointers.current.size === 2) {
+      // 핀치 시작: 진행 중이던 브러시 스트로크는 확정
+      if (brushAcc.current.size > 0) {
+        brushAcc.current = new Set()
+        onBrushEnd?.()
+      }
       const [a, b] = [...pointers.current.values()]
       pinch.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y),
@@ -314,6 +321,11 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells }: Pro
     pointers.current.delete(e.pointerId)
     if (pointers.current.size < 2) pinch.current = null
     clearLongPress()
+
+    if (brushAcc.current.size > 0) {
+      brushAcc.current = new Set()
+      onBrushEnd?.()
+    }
 
     const wasMag = mag.current
     if (wasMag) {
