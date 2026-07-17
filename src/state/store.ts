@@ -14,6 +14,7 @@ export type SizeMode = 'count' | 'widthCm'
 export type PaintMode = 'auto' | 'expert' | 'manual'
 
 interface SettingsState {
+  theme: 'light' | 'dark'
   diameterMm: 4 | 6 | 8
   sizeMode: SizeMode
   budget: number // 총 개수 기준 (기본 9000)
@@ -43,6 +44,7 @@ interface SettingsState {
 export const useSettings = create<SettingsState>()(
   persist(
     (set) => ({
+      theme: 'light',
       diameterMm: 8,
       sizeMode: 'widthCm',
       budget: 9000,

@@ -1,6 +1,6 @@
 /* 비즈발 도안 생성기 — 모바일 우선 전역 스타일 */
 :root {
-  /* 파스텔 핑크 러블리 테마 */
+  /* 파스텔 핑크 러블리 테마 (라이트) */
   --bg: #faf3f6;
   --card: #ffffff;
   --text: #33262c;
@@ -11,8 +11,43 @@
   --primary-soft: #fce7ef; /* 선택된 칩/토글 배경 */
   --primary-soft-border: #f2c3d6;
   --warn: #c2410c;
+  --warn-bg: #fff4ec;
+  --warn-border: #f0c4a8;
+  --info-bg: #fff7ef;
+  --info-border: #f2d9bd;
+  --header-bg: #fce8f0;
+  --header-border: #f3cddd;
+  --preview-bg: #f4e9ee;
+  --home-grad: linear-gradient(165deg, #fdeaf2 0%, #f8ecf8 55%, #ecebfb 100%);
+  --overlay-ctrl-bg: rgba(255, 255, 255, 0.92);
+  --bubble-text: #4a4d57;
   --radius: 14px;
   --shadow: 0 1px 4px rgba(90, 40, 60, 0.08);
+}
+
+:root[data-theme='dark'] {
+  /* 다크 모드: 따뜻한 플럼 톤 + 핑크 포인트 */
+  --bg: #221921;
+  --card: #2e242c;
+  --text: #f2e6ec;
+  --muted: #a58f9b;
+  --border: #473844;
+  --primary: #e07a9f;
+  --primary-dark: #f0a9c2;
+  --primary-soft: #452b38;
+  --primary-soft-border: #61404f;
+  --warn: #f0906b;
+  --warn-bg: #3a2620;
+  --warn-border: #6b4632;
+  --info-bg: #3a2f24;
+  --info-border: #5c4936;
+  --header-bg: #2e242c;
+  --header-border: #473844;
+  --preview-bg: #1a1318;
+  --home-grad: linear-gradient(165deg, #2e2029 0%, #281d2c 55%, #221c30 100%);
+  --overlay-ctrl-bg: rgba(46, 36, 44, 0.92);
+  --bubble-text: #cbb9c2;
+  --shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
 
 * {
@@ -28,6 +63,7 @@ html, body, #root {
 body {
   background: var(--bg);
   color: var(--text);
+  transition: background 0.2s, color 0.2s;
   font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic',
     'Segoe UI', sans-serif;
   font-size: 15px;
@@ -44,6 +80,8 @@ button {
 }
 input, select {
   font: inherit;
+  background: var(--card);
+  color: var(--text);
 }
 h1, h2, h3 {
   margin: 0;
@@ -69,8 +107,8 @@ ul {
   gap: 4px;
   padding: 8px 10px;
   padding-top: calc(8px + env(safe-area-inset-top));
-  background: #fce8f0;
-  border-bottom: 1px solid #f3cddd;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
   flex: none;
 }
 .app-header h2 {
@@ -105,8 +143,8 @@ ul {
   border: 1.5px solid var(--border);
 }
 .btn-warn {
-  background: #fff4ec;
-  border: 1.5px solid #f0c4a8;
+  background: var(--warn-bg);
+  border: 1.5px solid var(--warn-border);
   color: var(--warn);
 }
 .btn-primary:disabled, .btn-secondary:disabled, .btn-warn:disabled {
@@ -132,7 +170,7 @@ ul {
   gap: 28px;
   padding: 24px;
   text-align: center;
-  background: linear-gradient(165deg, #fdeaf2 0%, #f8ecf8 55%, #ecebfb 100%);
+  background: var(--home-grad);
 }
 .home-hero h1 { font-size: 26px; margin: 14px 0 8px; }
 .home-logo {
@@ -162,7 +200,7 @@ ul {
   flex: none;
   height: 44vh;
   min-height: 220px;
-  background: #f4e9ee;
+  background: var(--preview-bg);
 }
 .preview-wrap {
   position: absolute;
@@ -193,7 +231,7 @@ ul {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.92);
+  background: var(--overlay-ctrl-bg);
   border: 1px solid var(--border);
   border-radius: 999px;
   padding: 4px 6px;
@@ -393,12 +431,31 @@ details.card summary {
   font-size: 13.5px;
   font-weight: 700;
   color: var(--primary-dark);
-  background: #ffffff;
+  background: var(--card);
   border: 1.5px solid var(--primary-soft-border);
   border-radius: 999px;
   padding: 5px 11px;
   white-space: nowrap;
 }
+.theme-btn {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  background: var(--card);
+  border: 1.5px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  white-space: nowrap;
+}
+.theme-btn-float {
+  position: absolute;
+  top: calc(12px + env(safe-area-inset-top));
+  right: 12px;
+  z-index: 10;
+  box-shadow: var(--shadow);
+}
+.app { position: relative; }
+
 .guide-root {
   position: fixed;
   inset: 0;
@@ -443,7 +500,7 @@ details.card summary {
   margin: 0;
   font-size: 13.5px;
   line-height: 1.55;
-  color: #4a4d57;
+  color: var(--bubble-text);
 }
 .guide-btns {
   display: flex;
@@ -553,8 +610,8 @@ details.card summary {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  background: #fff7ef;
-  border: 1px solid #f2d9bd;
+  background: var(--info-bg);
+  border: 1px solid var(--info-border);
   border-radius: 10px;
   padding: 8px;
   font-size: 13.5px;

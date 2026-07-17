@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useProject } from './state/store'
+import { useProject, useSettings } from './state/store'
 import type { Screen } from './state/store'
 import { decodeImage } from './lib/convert'
 import { GUIDES } from './lib/guides'
@@ -33,11 +33,24 @@ export default function App() {
   const go = useProject((s) => s.go)
   const setImage = useProject((s) => s.setImage)
   const [guideOpen, setGuideOpen] = useState(false)
+  const theme = useSettings((s) => s.theme)
+  const setSetting = useSettings((s) => s.set)
 
   // 화면이 바뀌면 진행 중이던 가이드 닫기
   useEffect(() => {
     setGuideOpen(false)
   }, [screen])
+
+  // 다크/라이트 테마 적용 (+ 브라우저 상단바 색)
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute('content', theme === 'dark' ? '#2e242c' : '#FCE8F0')
+  }, [theme])
+
+  const toggleTheme = () => setSetting('theme', theme === 'dark' ? 'light' : 'dark')
+  const themeLabel = theme === 'dark' ? '☀️ 라이트' : '🌙 다크'
 
   // 데모/검증용: ?demo=convert|editor|result|library 로 샘플 이미지 자동 로드
   useEffect(() => {
@@ -71,6 +84,9 @@ export default function App() {
             </button>
           )}
           <h2>{TITLES[screen]}</h2>
+          <button className="theme-btn" onClick={toggleTheme} title="라이트/다크 모드 전환">
+            {themeLabel}
+          </button>
           {screen !== 'library' ? (
             <button className="btn-ghost" onClick={() => go('library')} title="색상 라이브러리">
               🎨
@@ -79,6 +95,11 @@ export default function App() {
             <span className="header-spacer" />
           )}
         </header>
+      )}
+      {screen === 'home' && (
+        <button className="theme-btn theme-btn-float" onClick={toggleTheme} title="라이트/다크 모드 전환">
+          {themeLabel}
+        </button>
       )}
       <main className={`app-main screen-${screen}`}>
         {screen === 'home' && <Home />}
