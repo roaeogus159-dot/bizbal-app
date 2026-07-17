@@ -1,5 +1,6 @@
 // 비즈 렌더링: 스프라이트 프리렌더(재질감 포함) + 뷰포트 컬링 그리드 드로잉
 import type { BeadColor, Finish } from './palette'
+import { EMPTY } from './palette'
 import { hexToRgb, rgbToHex } from './color'
 
 export type RenderMode = 'flat' | 'material'
@@ -136,6 +137,30 @@ function drawBeadSprite(
 }
 
 const spriteCache = new Map<string, HTMLCanvasElement>()
+const ghostCache = new Map<number, HTMLCanvasElement>()
+
+/** 빈 칸(비즈 미배치) 자리 표시: 연한 링 */
+function getGhostSprite(sizePx: number): HTMLCanvasElement {
+  const size = Math.max(2, Math.round(sizePx))
+  let cv = ghostCache.get(size)
+  if (!cv) {
+    cv = document.createElement('canvas')
+    cv.width = size
+    cv.height = size
+    const ctx = cv.getContext('2d')!
+    const c = size / 2
+    const r = size / 2 - Math.max(0.5, size * 0.08)
+    ctx.beginPath()
+    ctx.arc(c, c, r, 0, Math.PI * 2)
+    ctx.fillStyle = 'rgba(255,255,255,0.45)'
+    ctx.fill()
+    ctx.lineWidth = Math.max(0.6, size * 0.045)
+    ctx.strokeStyle = 'rgba(120,100,110,0.35)'
+    ctx.stroke()
+    ghostCache.set(size, cv)
+  }
+  return cv
+}
 
 /** 스프라이트 캐시: (색hex, 재질, 픽셀크기, 모드) 당 1회 프리렌더 → drawImage 스탬프 */
 export function getBeadSprite(
@@ -166,7 +191,8 @@ export function makeOverviewBitmap(
   const img = ctx.createImageData(W, H)
   const rgbCache: [number, number, number][] = palette.map((c) => hexToRgb(c.hex))
   for (let i = 0; i < grid.length; i++) {
-    const [r, g, b] = rgbCache[grid[i]] ?? [255, 0, 255]
+    // 빈 칸은 연한 배경 톤으로
+    const [r, g, b] = grid[i] === EMPTY ? [240, 236, 238] : (rgbCache[grid[i]] ?? [240, 236, 238])
     img.data[i * 4] = r
     img.data[i * 4 + 1] = g
     img.data[i * 4 + 2] = b
@@ -224,8 +250,12 @@ export function drawGrid(
     const spriteSize = Math.round(s * dpr)
     for (let y = y0; y < y1; y++) {
       for (let x = x0; x < x1; x++) {
-        const c = palette[grid[y * W + x]]
-        if (!c) continue
+        const v = grid[y * W + x]
+        const c = palette[v]
+        if (!c) {
+          if (v === EMPTY) ctx.drawImage(getGhostSprite(spriteSize), tx + x * s, ty + y * s, s, s)
+          continue
+        }
         const sp = getBeadSprite(c.hex, c.finish, spriteSize, opts.mode)
         ctx.drawImage(sp, tx + x * s, ty + y * s, s, s)
       }

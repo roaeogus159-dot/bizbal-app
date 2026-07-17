@@ -4,6 +4,9 @@ import { hexToRgb, rgbToLab } from './color'
 export type Category = 'solid' | 'transparent' | 'semi' | 'aurora' | 'custom'
 export type Finish = 'opaque' | 'transparent' | 'semi' | 'aurora'
 
+/** 빈 칸(비즈 미배치) 센티널 — 직접 채우기 모드·지우개용 */
+export const EMPTY = 0xffff
+
 export interface BeadColor {
   code: string
   name: string

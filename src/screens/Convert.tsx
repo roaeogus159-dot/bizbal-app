@@ -198,14 +198,36 @@ export default function Convert() {
           <div className="seg-row">
             <span>채색 모드</span>
             <div className="segmented">
-              <button className={s.paintMode === 'auto' ? 'on' : ''} onClick={() => s.set('paintMode', 'auto')}>
-                자동
-              </button>
-              <button className={s.paintMode === 'expert' ? 'on' : ''} onClick={() => s.set('paintMode', 'expert')}>
-                전문가
-              </button>
+              {(
+                [
+                  ['auto', '자동'],
+                  ['expert', '전문가'],
+                  ['manual', '직접'],
+                ] as const
+              ).map(([mode, label]) => (
+                <button
+                  key={mode}
+                  className={s.paintMode === mode ? 'on' : ''}
+                  onClick={() => {
+                    if (s.paintMode === mode) return
+                    // 직접 모드 ↔ 자동/전문가 전환은 격자가 다시 만들어짐
+                    const crossing = mode === 'manual' || s.paintMode === 'manual'
+                    if (crossing && !confirmGridChange()) return
+                    s.set('paintMode', mode)
+                    if (crossing) requestConvert()
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
           </div>
+          {s.paintMode === 'manual' && (
+            <p className="muted hint">
+              빈 비즈 칸만 만들어 드려요. [세부 수정]에서 [원본] 오버레이를 켜고 색상 바에서 색을 골라
+              직접 채워보세요.
+            </p>
+          )}
           {s.paintMode === 'expert' && (
             <>
               <p className="muted hint">

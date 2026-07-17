@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { Category, CustomColor } from '../lib/palette'
-import { fullPalette, enabledIndices, paletteArrays } from '../lib/palette'
+import { fullPalette, enabledIndices, paletteArrays, EMPTY } from '../lib/palette'
 import type { SourceImage } from '../lib/convert'
 import { autoSize, convertInWorker } from '../lib/convert'
 import type { Background } from '../lib/render'
@@ -9,7 +9,8 @@ import type { Background } from '../lib/render'
 // ---------- 설정 + 팔레트 상태 (localStorage 영속) ----------
 
 export type SizeMode = 'count' | 'widthCm'
-export type PaintMode = 'auto' | 'expert'
+// auto: 자동 채색 / expert: 자동+ΔE 강조 / manual: 빈 칸만 생성, 직접 채우기
+export type PaintMode = 'auto' | 'expert' | 'manual'
 
 interface SettingsState {
   diameterMm: 4 | 6 | 8
@@ -133,6 +134,7 @@ interface ProjectState {
   selection: Set<number>
   undoStack: UndoEntry[]
   redoStack: UndoEntry[]
+  recentColors: number[] // 최근에 고른 색 (앞이 가장 최근)
 
   setOverlay: (on: boolean, alpha?: number) => void
   go: (s: Screen) => void
@@ -144,6 +146,7 @@ interface ProjectState {
   // 에디터 액션
   setTool: (t: Tool) => void
   setSelection: (sel: Set<number>) => void
+  pushRecentColor: (idx: number) => void
   applyColor: (cells: number[], colorIdx: number) => void
   /** 실시간 칠하기: 지나간 순서의 셀들을 즉시 반영. 경로를 되짚으면 그만큼 취소. strokeCommit 시 한 행동으로 기록 */
   strokeMove: (cells: number[], colorIdx: number) => void
@@ -224,6 +227,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
   selection: new Set(),
   undoStack: [],
   redoStack: [],
+  recentColors: [],
 
   setOverlay: (on, alpha) =>
     set((st) => ({ overlayOn: on, overlayAlpha: alpha ?? st.overlayAlpha })),
@@ -233,7 +237,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
   setImage: (img) => {
     set({
       image: img, grid: null, baseGrid: null, cellRgb: null, deltaE: null,
-      selection: new Set(), undoStack: [], redoStack: [],
+      selection: new Set(), undoStack: [], redoStack: [], recentColors: [],
     })
     get().applyAutoSize()
   },
@@ -256,6 +260,24 @@ export const useProject = create<ProjectState>()((set, get) => ({
   requestConvert: () => {
     const { image, W, H } = get()
     if (!image || W < 1 || H < 1) return
+    // 직접 채우기 모드: 매칭 없이 빈 칸 격자만 생성
+    if (useSettings.getState().paintMode === 'manual') {
+      clearTimeout(convertTimer)
+      const grid = new Uint16Array(W * H).fill(EMPTY)
+      set((st) => ({
+        grid,
+        baseGrid: grid.slice(),
+        cellRgb: null,
+        deltaE: null,
+        converting: false,
+        gridVersion: st.gridVersion + 1,
+        selection: new Set(),
+        undoStack: [],
+        redoStack: [],
+      }))
+      scheduleAutosave()
+      return
+    }
     set({ converting: true })
     clearTimeout(convertTimer)
     convertTimer = setTimeout(async () => {
@@ -289,6 +311,13 @@ export const useProject = create<ProjectState>()((set, get) => ({
 
   setTool: (t) => set({ tool: t }),
   setSelection: (sel) => set({ selection: sel }),
+
+  pushRecentColor: (idx) =>
+    set((st) =>
+      idx === EMPTY
+        ? st // 지우개는 항상 맨 앞에 고정 표시라 기록 불필요
+        : { recentColors: [idx, ...st.recentColors.filter((i) => i !== idx)].slice(0, 24) },
+    ),
 
   strokeMove: (cells, colorIdx) => {
     const { grid } = get()

@@ -1,5 +1,6 @@
 // 도안 파생 데이터: 색상 개수표(범례 순번), 세로 줄(스트랜드) 런렝스·길이
 import type { BeadColor } from './palette'
+import { EMPTY } from './palette'
 
 export interface LegendEntry {
   paletteIdx: number
@@ -7,10 +8,11 @@ export interface LegendEntry {
   count: number
 }
 
-/** 색상별 개수 집계 → 개수 내림차순으로 순번 부여 */
+/** 색상별 개수 집계 → 개수 내림차순으로 순번 부여 (빈 칸 제외) */
 export function buildLegend(grid: Uint16Array): LegendEntry[] {
   const counts = new Map<number, number>()
   for (let i = 0; i < grid.length; i++) {
+    if (grid[i] === EMPTY) continue
     counts.set(grid[i], (counts.get(grid[i]) ?? 0) + 1)
   }
   return [...counts.entries()]

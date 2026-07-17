@@ -669,6 +669,25 @@ details.card summary {
   width: 30px;
   height: 30px;
 }
+.add-swatch, .eraser-swatch {
+  width: 36px;
+  height: 36px;
+  border: 1.5px dashed var(--primary-soft-border);
+  background: var(--card);
+  color: var(--primary-dark);
+  font-size: 17px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+.eraser-swatch { color: var(--muted); }
+.eraser-swatch.on {
+  border-style: solid;
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
 
 /* ---------- 결과 ---------- */
 .result {

@@ -23,12 +23,16 @@ export default function ColorList() {
 
   if (!grid) return null
 
+  const placed = legend.reduce((sum, e) => sum + e.count, 0)
+
   return (
     <section className="color-list card" data-guide="colors">
       <div className="color-list-head">
         <h3>색상 개수표</h3>
         <span className="muted">
-          총 {(W * H).toLocaleString()}개 · {legend.length}색
+          {placed < W * H
+            ? `총 ${(W * H).toLocaleString()}칸 · 채움 ${placed.toLocaleString()}개 · ${legend.length}색`
+            : `총 ${(W * H).toLocaleString()}개 · ${legend.length}색`}
         </span>
         <label className="toggle-sm">
           <input

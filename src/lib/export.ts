@@ -286,7 +286,7 @@ export function renderStrandSheets(
       const r = runs[x][i]
       const c = palette[r.paletteIdx]
       const chip = 26
-      const t = `${c?.code ?? '?'}×${r.len}${i < runs[x].length - 1 ? ',  ' : ''}`
+      const t = `${c?.code ?? '빈칸'}×${r.len}${i < runs[x].length - 1 ? ',  ' : ''}`
       const wSeg = chip + 8 + meas.measureText(t).width
       if (curW + wSeg > maxW) {
         lines.push(cur)

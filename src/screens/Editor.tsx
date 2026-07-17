@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react'
 import { useProject, useSettings } from '../state/store'
 import type { Tool } from '../state/store'
-import { fullPalette, enabledIndices } from '../lib/palette'
+import { fullPalette, enabledIndices, EMPTY } from '../lib/palette'
 import { rgbToLab, deltaE2000 } from '../lib/color'
 import { buildLegend } from '../lib/pattern'
 import PreviewCanvas from '../components/PreviewCanvas'
@@ -32,12 +32,14 @@ export default function Editor() {
     setTimeout(() => setToast(''), 2500)
   }
 
-  // 현재 도안에 사용 중인 색 (개수 많은 순) — 하단 빠른 색상 바
-  const usedColors = useMemo(
-    () => (p.grid ? buildLegend(p.grid).map((e) => e.paletteIdx) : []),
+  // 하단 색상 바: 최근에 고른 색이 맨 앞, 그 뒤로 도안에 쓰인 색(개수 많은 순)
+  const usedColors = useMemo(() => {
+    const legend = p.grid ? buildLegend(p.grid).map((e) => e.paletteIdx) : []
+    const recent = p.recentColors.filter((i) => palette[i])
+    const rest = legend.filter((i) => !recent.includes(i))
+    return [...recent, ...rest]
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [p.grid, p.gridVersion],
-  )
+  }, [p.grid, p.gridVersion, p.recentColors, palette])
 
   const expertCount = useMemo(() => {
     if (s.paintMode !== 'expert' || !p.deltaE) return 0
@@ -74,6 +76,7 @@ export default function Editor() {
   const onCellTap = (idx: number) => {
     if (p.tool === 'eyedrop') {
       setCurrentColor(grid[idx])
+      p.pushRecentColor(grid[idx])
       return
     }
     if (p.tool === 'magic') {
@@ -105,19 +108,28 @@ export default function Editor() {
 
   const applyColor = (colorIdx: number) => {
     setCurrentColor(colorIdx) // 고른 색은 칠하기용 현재 색으로도 지정
-    if (p.selection.size === 0) return
+    p.pushRecentColor(colorIdx)
+    if (p.selection.size === 0) {
+      // 칠할 색만 고른 것 → 바로 칠할 수 있게 칠하기 도구로 전환
+      if (p.tool !== 'brush') p.setTool('brush')
+      setSheetOpen(false)
+      return
+    }
     p.applyColor([...p.selection], colorIdx)
     setSheetOpen(false)
     p.setSelection(new Set())
   }
 
+  const colorName = (idx: number) => (idx === EMPTY ? '빈칸(지우개)' : palette[idx]?.name ?? '?')
+
   // 하단 색상 바 탭: 선택 칸이 있으면 즉시 교체, 없으면 현재 색 지정
   const onStripTap = (colorIdx: number) => {
     if (p.selection.size > 0) {
       applyColor(colorIdx)
-      showToast(`${palette[colorIdx]?.name}(으)로 교체했어요`)
+      showToast(colorIdx === EMPTY ? '선택한 칸을 빈칸으로 지웠어요' : `${colorName(colorIdx)}(으)로 교체했어요`)
     } else {
       setCurrentColor(colorIdx)
+      p.pushRecentColor(colorIdx)
       if (p.tool !== 'brush') p.setTool('brush')
     }
   }
@@ -207,25 +219,37 @@ export default function Editor() {
             </button>
           </div>
 
-          {/* 사용 중인 색상 바: 탭 → 선택 칸 교체 / 선택 없으면 칠하기 색 지정 */}
-          {usedColors.length > 0 && (
-            <div className="used-strip" data-guide="used-colors">
-              {usedColors.map((idx) => {
-                const c = palette[idx]
-                if (!c) return null
-                return (
-                  <button
-                    key={idx}
-                    className={`used-swatch ${currentColor === idx ? 'on' : ''}`}
-                    onClick={() => onStripTap(idx)}
-                    title={`${c.name} (${c.code})`}
-                  >
-                    <BeadSwatch color={c} size={30} />
-                  </button>
-                )
-              })}
-            </div>
-          )}
+          {/* 사용 색상 바: [＋]=팔레트에서 색 고르기, [∅]=지우개, 최근 고른 색이 맨 앞 */}
+          <div className="used-strip" data-guide="used-colors">
+            <button
+              className="used-swatch add-swatch"
+              onClick={() => setSheetOpen(true)}
+              title="팔레트에서 색 고르기"
+            >
+              ＋
+            </button>
+            <button
+              className={`used-swatch eraser-swatch ${currentColor === EMPTY ? 'on' : ''}`}
+              onClick={() => onStripTap(EMPTY)}
+              title="지우개 (빈칸으로)"
+            >
+              ∅
+            </button>
+            {usedColors.map((idx) => {
+              const c = palette[idx]
+              if (!c) return null
+              return (
+                <button
+                  key={idx}
+                  className={`used-swatch ${currentColor === idx ? 'on' : ''}`}
+                  onClick={() => onStripTap(idx)}
+                  title={`${c.name} (${c.code})`}
+                >
+                  <BeadSwatch color={c} size={30} />
+                </button>
+              )
+            })}
+          </div>
 
           {s.paintMode === 'expert' && (
             <label className="field-col">
@@ -248,7 +272,11 @@ export default function Editor() {
 
       {sheetOpen && (
         <PaletteSheet
-          title={`선택한 ${p.selection.size.toLocaleString()}칸의 색 교체`}
+          title={
+            p.selection.size > 0
+              ? `선택한 ${p.selection.size.toLocaleString()}칸의 색 교체`
+              : '칠할 색 고르기'
+          }
           suggestions={suggestions}
           onPick={applyColor}
           onClose={() => setSheetOpen(false)}
