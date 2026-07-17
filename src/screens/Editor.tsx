@@ -90,13 +90,13 @@ export default function Editor() {
     p.setSelection(sel)
   }
 
-  // 칠하기: 드래그 중 즉시 반영, 손을 떼면 하나의 행동으로 확정 (되돌리기 한 번에 전체 취소)
+  // 칠하기: 드래그 중 즉시 반영, 경로를 되짚으면 그만큼 취소, 손을 떼면 하나의 행동으로 확정
   const onBrushCells = (cells: number[]) => {
     if (currentColor === null) {
       showToast('아래 색상 바에서 칠할 색을 먼저 선택해 주세요')
       return
     }
-    p.strokePaint(cells, currentColor)
+    p.strokeMove(cells, currentColor)
   }
 
   const onBrushEnd = () => {
@@ -163,7 +163,7 @@ export default function Editor() {
           <p className="muted hint">
             {p.tool === 'pan' && '한 손가락으로 이동, 두 손가락으로 확대/축소합니다.'}
             {p.tool === 'point' && '탭으로 칸 선택/해제 (여러 칸 가능). 길게 누르면 돋보기가 떠요.'}
-            {p.tool === 'brush' && '드래그하면 현재 색으로 바로 칠해져요. 손을 떼면 확정되고, 되돌리기 한 번으로 전체 취소됩니다. (색은 아래 색상 바에서 선택)'}
+            {p.tool === 'brush' && '드래그하면 현재 색으로 바로 칠해져요. 지나온 경로를 거꾸로 되짚으면 그만큼 취소! 손을 떼면 확정됩니다. (색은 아래 색상 바에서 선택)'}
             {p.tool === 'magic' && '탭한 칸과 같은 색 전체가 선택됩니다.'}
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
           </p>

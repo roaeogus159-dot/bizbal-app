@@ -145,8 +145,8 @@ interface ProjectState {
   setTool: (t: Tool) => void
   setSelection: (sel: Set<number>) => void
   applyColor: (cells: number[], colorIdx: number) => void
-  /** 실시간 칠하기: 드래그 중 즉시 반영, strokeCommit 시 한 번의 행동으로 기록 */
-  strokePaint: (cells: number[], colorIdx: number) => void
+  /** 실시간 칠하기: 지나간 순서의 셀들을 즉시 반영. 경로를 되짚으면 그만큼 취소. strokeCommit 시 한 행동으로 기록 */
+  strokeMove: (cells: number[], colorIdx: number) => void
   strokeCommit: () => void
   saveNow: () => boolean
   undo: () => void
@@ -160,8 +160,10 @@ let autosaveTimer: ReturnType<typeof setTimeout> | undefined
 
 const AUTOSAVE_MAX_CELLS = 200_000
 
-// 진행 중인 칠하기 스트로크의 원래 색 (셀 → 이전 팔레트 인덱스)
-const strokeBefore = new Map<number, number>()
+// 진행 중인 칠하기 스트로크 상태
+const strokeBefore = new Map<number, number>() // 실제로 색이 바뀐 셀 → 이전 팔레트 인덱스
+let strokePath: number[] = [] // 포인터가 지나간 셀 순서 (되짚기 취소용)
+const strokeSet = new Set<number>() // strokePath 멤버십
 
 /** 즉시 저장. 성공 여부 반환 (중간 저장 버튼·자동저장 공용) */
 function doAutosave(): boolean {
@@ -288,12 +290,29 @@ export const useProject = create<ProjectState>()((set, get) => ({
   setTool: (t) => set({ tool: t }),
   setSelection: (sel) => set({ selection: sel }),
 
-  strokePaint: (cells, colorIdx) => {
+  strokeMove: (cells, colorIdx) => {
     const { grid } = get()
     if (!grid) return
     let changed = false
     for (const c of cells) {
-      if (!strokeBefore.has(c) && grid[c] !== colorIdx) {
+      const n = strokePath.length
+      if (n > 0 && c === strokePath[n - 1]) continue // 같은 칸에 머무름
+      // 직전 경로로 되짚기: 마지막 칠을 취소
+      if (n >= 2 && c === strokePath[n - 2]) {
+        const last = strokePath.pop()!
+        strokeSet.delete(last)
+        const prev = strokeBefore.get(last)
+        if (prev !== undefined) {
+          grid[last] = prev
+          strokeBefore.delete(last)
+          changed = true
+        }
+        continue
+      }
+      if (strokeSet.has(c)) continue // 자기 경로 교차는 유지
+      strokePath.push(c)
+      strokeSet.add(c)
+      if (grid[c] !== colorIdx) {
         strokeBefore.set(c, grid[c])
         grid[c] = colorIdx
         changed = true
@@ -303,6 +322,8 @@ export const useProject = create<ProjectState>()((set, get) => ({
   },
 
   strokeCommit: () => {
+    strokePath = []
+    strokeSet.clear()
     if (strokeBefore.size === 0) return
     const { grid } = get()
     if (!grid) {

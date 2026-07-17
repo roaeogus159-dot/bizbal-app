@@ -52,7 +52,8 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const pointers = useRef(new Map<number, { x: number; y: number }>())
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
   const down = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null)
-  const brushAcc = useRef<Set<number>>(new Set())
+  const brushActive = useRef(false)
+  const lastBrushCell = useRef<{ cx: number; cy: number } | null>(null)
   const longTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const cssSize = () => {
@@ -214,6 +215,41 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     return cy * W + cx
   }
 
+  const cellCoordsAt = (x: number, y: number): { cx: number; cy: number } | null => {
+    const v = view.current
+    const cx = Math.floor((x - v.tx) / v.s)
+    const cy = Math.floor((y - v.ty) / v.s)
+    if (cx < 0 || cx >= W || cy < 0 || cy >= H) return null
+    return { cx, cy }
+  }
+
+  // 브러시: 이동 샘플 사이를 Bresenham으로 보간해 지나간 칸을 순서대로 전달
+  const brushLineTo = (to: { cx: number; cy: number }) => {
+    const from = lastBrushCell.current
+    if (!from) {
+      lastBrushCell.current = to
+      onBrushCells?.([to.cy * W + to.cx])
+      return
+    }
+    if (from.cx === to.cx && from.cy === to.cy) return
+    const cells: number[] = []
+    let { cx: x0, cy: y0 } = from
+    const { cx: x1, cy: y1 } = to
+    const dx = Math.abs(x1 - x0)
+    const dy = -Math.abs(y1 - y0)
+    const sx = x0 < x1 ? 1 : -1
+    const sy = y0 < y1 ? 1 : -1
+    let err = dx + dy
+    while (!(x0 === x1 && y0 === y1)) {
+      const e2 = 2 * err
+      if (e2 >= dy) { err += dy; x0 += sx }
+      if (e2 <= dx) { err += dx; y0 += sy }
+      cells.push(y0 * W + x0)
+    }
+    lastBrushCell.current = to
+    if (cells.length > 0) onBrushCells?.(cells)
+  }
+
   const magnifierPoint = (x: number, y: number) => ({ x, y }) // 돋보기 중심=손가락 위치
 
   const clearLongPress = () => {
@@ -226,8 +262,9 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     pointers.current.set(e.pointerId, p)
     if (pointers.current.size === 2) {
       // 핀치 시작: 진행 중이던 브러시 스트로크는 확정
-      if (brushAcc.current.size > 0) {
-        brushAcc.current = new Set()
+      if (brushActive.current) {
+        brushActive.current = false
+        lastBrushCell.current = null
         onBrushEnd?.()
       }
       const [a, b] = [...pointers.current.values()]
@@ -242,12 +279,13 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       return
     }
     down.current = { ...p, t: performance.now(), moved: false }
-    brushAcc.current = new Set()
+    brushActive.current = false
+    lastBrushCell.current = null
     if (editable && tool === 'brush') {
-      const c = cellAt(p.x, p.y)
+      const c = cellCoordsAt(p.x, p.y)
       if (c !== null) {
-        brushAcc.current.add(c)
-        onBrushCells?.([...brushAcc.current])
+        brushActive.current = true
+        brushLineTo(c)
       }
     }
     if (editable && tool === 'point') {
@@ -298,10 +336,10 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     }
 
     if (editable && tool === 'brush') {
-      const c = cellAt(p.x, p.y)
-      if (c !== null && !brushAcc.current.has(c)) {
-        brushAcc.current.add(c)
-        onBrushCells?.([...brushAcc.current])
+      const c = cellCoordsAt(p.x, p.y)
+      if (c !== null) {
+        if (!brushActive.current) brushActive.current = true
+        brushLineTo(c)
       }
       return
     }
@@ -322,8 +360,9 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     if (pointers.current.size < 2) pinch.current = null
     clearLongPress()
 
-    if (brushAcc.current.size > 0) {
-      brushAcc.current = new Set()
+    if (brushActive.current) {
+      brushActive.current = false
+      lastBrushCell.current = null
       onBrushEnd?.()
     }
 
