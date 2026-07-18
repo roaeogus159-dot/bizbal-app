@@ -3,7 +3,7 @@
 // 불러올 때 코드 기준으로 재매핑한다 (없는 커스텀 색은 자동 추가).
 import type { BeadColor, CustomColor } from './palette'
 import { BASE_PALETTE, EMPTY, fullPalette } from './palette'
-import { dateStamp } from './export'
+import { dateStamp, shouldUseShare } from './export'
 
 export interface ProjectFileV1 {
   app: 'bizbal'
@@ -125,4 +125,21 @@ export function downloadProjectFile(json: string, name: string): void {
   a.download = `비즈발_${name.replace(/[\\/:*?"<>|]/g, '_')}_${dateStamp()}.bizbal.json`
   a.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
+}
+
+/** 작업 파일 공유: 모바일은 공유시트(카톡 등) 우선, 그 외엔 다운로드 */
+export async function shareProjectFile(json: string, name: string): Promise<'shared' | 'downloaded'> {
+  const fileName = `비즈발_${name.replace(/[\\/:*?"<>|]/g, '_')}_${dateStamp()}.bizbal.json`
+  const file = new File([json], fileName, { type: 'application/json' })
+  const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
+  if (shouldUseShare() && nav.share && nav.canShare?.({ files: [file] })) {
+    try {
+      await nav.share({ files: [file], title: name })
+      return 'shared'
+    } catch (e) {
+      if ((e as Error).name === 'AbortError') return 'shared' // 사용자가 취소
+    }
+  }
+  downloadProjectFile(json, name)
+  return 'downloaded'
 }

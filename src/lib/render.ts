@@ -217,6 +217,8 @@ export interface DrawOptions {
   highlight?: { deltaE: Float32Array; threshold: number } | null
   /** 원본 사진 오버레이 (직접 대조하며 색 수정용) */
   overlay?: { source: CanvasImageSource; alpha: number } | null
+  /** 행/열 이동 대상 강조 (해당 행·열에 반투명 밴드) */
+  cross?: { x: number; y: number } | null
 }
 
 /** 메인 그리드 드로잉 (뷰포트 컬링, dpr 반영) */
@@ -312,6 +314,20 @@ export function drawGrid(
         }
       }
     }
+  }
+
+  // 행/열 이동 대상 강조 밴드
+  if (opts.cross) {
+    const { x: cxg, y: cyg } = opts.cross
+    ctx.fillStyle = 'rgba(30,120,255,0.16)'
+    ctx.strokeStyle = 'rgba(30,120,255,0.85)'
+    ctx.lineWidth = 1.5
+    // 열(세로 밴드)
+    ctx.fillRect(tx + cxg * s, ty, s, H * s)
+    ctx.strokeRect(tx + cxg * s + 0.5, ty + 0.5, s - 1, H * s - 1)
+    // 행(가로 밴드)
+    ctx.fillRect(tx, ty + cyg * s, W * s, s)
+    ctx.strokeRect(tx + 0.5, ty + cyg * s + 0.5, W * s - 1, s - 1)
   }
 
   // 선택 오버레이

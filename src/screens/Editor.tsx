@@ -18,7 +18,16 @@ const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: 'bucket', label: '채우기', icon: '🪣' },
   { id: 'magic', label: '같은 색', icon: '🪄' },
   { id: 'eyedrop', label: '스포이드', icon: '💧' },
+  { id: 'rowcol', label: '행/열 이동', icon: '⇄' },
+  { id: 'paste', label: '복사/붙이기', icon: '📋' },
 ]
+
+/** 복사한 패턴 (선택 칸의 bounding box 좌상단 기준 상대좌표) */
+interface Clipboard {
+  w: number
+  h: number
+  cells: { dx: number; dy: number; v: number }[]
+}
 
 export default function Editor() {
   const p = useProject()
@@ -26,6 +35,8 @@ export default function Editor() {
   const [sheetOpen, setSheetOpen] = useState(false)
   const [currentColor, setCurrentColor] = useState<number | null>(null)
   const [toast, setToast] = useState('')
+  const [rowcolTarget, setRowcolTarget] = useState<{ x: number; y: number } | null>(null)
+  const [clipboard, setClipboard] = useState<Clipboard | null>(null)
 
   const palette = useMemo(() => fullPalette(s.customColors), [s.customColors])
 
@@ -104,6 +115,38 @@ export default function Editor() {
       p.setSelection(sel)
       return
     }
+    // 행/열 이동: 탭으로 대상 행·열 지정 → 아래 화살표 버튼으로 이동
+    if (p.tool === 'rowcol') {
+      setRowcolTarget({ x: idx % p.W, y: Math.floor(idx / p.W) })
+      return
+    }
+    // 붙여넣기: 복사해둔 패턴을 탭한 칸 중앙 기준으로 배치
+    if (p.tool === 'paste') {
+      if (!clipboard) {
+        showToast('먼저 칸을 선택하고 [선택 복사]를 눌러 주세요')
+        return
+      }
+      const tx = idx % p.W
+      const ty = Math.floor(idx / p.W)
+      const ox = tx - Math.floor(clipboard.w / 2)
+      const oy = ty - Math.floor(clipboard.h / 2)
+      const cells: number[] = []
+      const values: number[] = []
+      for (const c of clipboard.cells) {
+        const x = ox + c.dx
+        const y = oy + c.dy
+        if (x < 0 || x >= p.W || y < 0 || y >= p.H) continue
+        cells.push(y * p.W + x)
+        values.push(c.v)
+      }
+      if (cells.length === 0) {
+        showToast('붙일 위치가 도안 밖이에요')
+        return
+      }
+      p.applyCellValues(cells, values)
+      showToast(`${cells.length.toLocaleString()}칸 붙여넣기 완료 (되돌리기 가능)`)
+      return
+    }
     // 점 선택: 탭 토글 (다중선택)
     const sel = new Set(p.selection)
     if (sel.has(idx)) sel.delete(idx)
@@ -122,6 +165,67 @@ export default function Editor() {
 
   const onBrushEnd = () => {
     p.strokeCommit()
+  }
+
+  // 행/열 이동: 인접 줄과 통째로 교환 (한 번의 되돌리기)
+  const shiftRowCol = (kind: 'row' | 'col', dir: -1 | 1) => {
+    if (!rowcolTarget) return
+    const { W, H } = p
+    const cells: number[] = []
+    const values: number[] = []
+    if (kind === 'col') {
+      const a = rowcolTarget.x
+      const b = a + dir
+      if (b < 0 || b >= W) {
+        showToast('더 이동할 수 없어요 (가장자리)')
+        return
+      }
+      for (let y = 0; y < H; y++) {
+        const ia = y * W + a
+        const ib = y * W + b
+        cells.push(ia, ib)
+        values.push(grid[ib], grid[ia])
+      }
+      p.applyCellValues(cells, values)
+      setRowcolTarget({ x: b, y: rowcolTarget.y }) // 대상이 따라가서 연타로 계속 이동
+    } else {
+      const a = rowcolTarget.y
+      const b = a + dir
+      if (b < 0 || b >= H) {
+        showToast('더 이동할 수 없어요 (가장자리)')
+        return
+      }
+      for (let x = 0; x < W; x++) {
+        const ia = a * W + x
+        const ib = b * W + x
+        cells.push(ia, ib)
+        values.push(grid[ib], grid[ia])
+      }
+      p.applyCellValues(cells, values)
+      setRowcolTarget({ x: rowcolTarget.x, y: b })
+    }
+  }
+
+  // 선택한 칸들을 클립보드로 복사 (bounding box 기준 상대좌표)
+  const copySelection = () => {
+    if (p.selection.size === 0) return
+    let minX = p.W, minY = p.H, maxX = 0, maxY = 0
+    for (const i of p.selection) {
+      const x = i % p.W
+      const y = Math.floor(i / p.W)
+      if (x < minX) minX = x
+      if (x > maxX) maxX = x
+      if (y < minY) minY = y
+      if (y > maxY) maxY = y
+    }
+    const cells = [...p.selection].map((i) => ({
+      dx: (i % p.W) - minX,
+      dy: Math.floor(i / p.W) - minY,
+      v: grid[i],
+    }))
+    setClipboard({ w: maxX - minX + 1, h: maxY - minY + 1, cells })
+    p.setSelection(new Set())
+    showToast(`${cells.length.toLocaleString()}칸 복사됨 — 붙일 위치를 탭하세요`)
   }
 
   const applyColor = (colorIdx: number) => {
@@ -175,6 +279,7 @@ export default function Editor() {
           onBrushCells={onBrushCells}
           onBrushEnd={onBrushEnd}
           onAutoPen={() => showToast('애플펜 감지 — 이제 손가락은 화면 이동이에요. 도구 바에서 끌 수 있어요')}
+          cross={p.tool === 'rowcol' ? rowcolTarget : null}
         />
         {s.paintMode === 'expert' && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
@@ -189,7 +294,10 @@ export default function Editor() {
               <button
                 key={t.id}
                 className={`tool-btn ${p.tool === t.id ? 'on' : ''}`}
-                onClick={() => p.setTool(t.id)}
+                onClick={() => {
+                  p.setTool(t.id)
+                  if (t.id !== 'rowcol') setRowcolTarget(null)
+                }}
               >
                 <span>{t.icon}</span>
                 {t.label}
@@ -203,7 +311,54 @@ export default function Editor() {
             {p.tool === 'bucket' && '그림판 채우기처럼! 아래 색상 바에서 색을 고르고, 채우고 싶은 곳을 탭하면 이어진 같은 색 영역이 한 번에 바뀌어요.'}
             {p.tool === 'magic' && '탭한 칸과 같은 색 전체가 선택됩니다.'}
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
+            {p.tool === 'rowcol' && '이동할 행/열의 칸을 탭한 뒤, 아래 화살표로 한 줄씩 밀어요.'}
+            {p.tool === 'paste' && '칸을 선택하고 [선택 복사] → 붙일 위치를 탭하면 그 자리에 복사돼요.'}
           </p>
+
+          {/* 행/열 이동 화살표 패널 */}
+          {p.tool === 'rowcol' && (
+            <div className="rowcol-panel">
+              {rowcolTarget ? (
+                <>
+                  <span className="rowcol-info">
+                    행 <strong>{rowcolTarget.y + 1}</strong> · 열 <strong>{rowcolTarget.x + 1}</strong>
+                  </span>
+                  <div className="rowcol-btns">
+                    <button className="btn-sm btn-secondary" onClick={() => shiftRowCol('row', -1)}>▲ 행 위로</button>
+                    <button className="btn-sm btn-secondary" onClick={() => shiftRowCol('row', 1)}>▼ 행 아래로</button>
+                    <button className="btn-sm btn-secondary" onClick={() => shiftRowCol('col', -1)}>◀ 열 왼쪽</button>
+                    <button className="btn-sm btn-secondary" onClick={() => shiftRowCol('col', 1)}>▶ 열 오른쪽</button>
+                  </div>
+                  <button className="btn-ghost" onClick={() => setRowcolTarget(null)}>해제</button>
+                </>
+              ) : (
+                <span className="muted">이동할 칸을 도안에서 탭해 주세요</span>
+              )}
+            </div>
+          )}
+
+          {/* 복사/붙이기 패널 */}
+          {p.tool === 'paste' && (
+            <div className="rowcol-panel">
+              {clipboard ? (
+                <>
+                  <span className="rowcol-info">
+                    📋 복사됨: <strong>{clipboard.w}×{clipboard.h}</strong> ({clipboard.cells.length.toLocaleString()}칸)
+                    — 붙일 위치를 탭하세요
+                  </span>
+                  <button className="btn-ghost" onClick={() => setClipboard(null)}>복사 비우기</button>
+                </>
+              ) : (
+                <button
+                  className="btn-sm btn-primary"
+                  disabled={p.selection.size === 0}
+                  onClick={copySelection}
+                >
+                  📋 선택 복사 ({p.selection.size.toLocaleString()}칸)
+                </button>
+              )}
+            </div>
+          )}
 
           <label className="toggle-sm">
             <input

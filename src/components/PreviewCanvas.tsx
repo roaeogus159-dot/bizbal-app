@@ -13,13 +13,15 @@ interface Props {
   onBrushEnd?: () => void
   /** 애플펜이 처음 감지돼 펜 모드가 자동으로 켜졌을 때 (1회) */
   onAutoPen?: () => void
+  /** 행/열 이동 대상 강조 */
+  cross?: { x: number; y: number } | null
 }
 
 const TAP_MS = 350
 const TAP_DIST = 8
 const LONGPRESS_MS = 450
 
-export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd, onAutoPen }: Props) {
+export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd, onAutoPen, cross }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -132,6 +134,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
             ? { deltaE, threshold: expertThreshold }
             : null,
         overlay,
+        cross: editable ? cross : null,
       })
       // 돋보기
       if (mag.current) {
@@ -191,7 +194,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     }
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable, overlayOn, overlayAlpha, image])
+  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable, overlayOn, overlayAlpha, image, cross])
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {

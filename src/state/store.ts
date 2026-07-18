@@ -110,7 +110,7 @@ export const useSettings = create<SettingsState>()(
 // ---------- 프로젝트 상태 (메모리) ----------
 
 export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects'
-export type Tool = 'pan' | 'point' | 'brush' | 'bucket' | 'magic' | 'eyedrop'
+export type Tool = 'pan' | 'point' | 'brush' | 'bucket' | 'magic' | 'eyedrop' | 'rowcol' | 'paste'
 
 // 칸 편집 (같은 크기 안에서 색만 바뀜)
 interface CellEdit {
@@ -166,6 +166,8 @@ interface ProjectState {
   setSelection: (sel: Set<number>) => void
   pushRecentColor: (idx: number) => void
   applyColor: (cells: number[], colorIdx: number) => void
+  /** 칸별로 다른 값을 한 번의 행동으로 적용 (행/열 이동·붙여넣기 공용) */
+  applyCellValues: (cells: number[], values: number[]) => void
   /** 실시간 칠하기: 지나간 순서의 셀들을 즉시 반영. 경로를 되짚으면 그만큼 취소. strokeCommit 시 한 행동으로 기록 */
   strokeMove: (cells: number[], colorIdx: number) => void
   strokeCommit: () => void
@@ -484,6 +486,35 @@ export const useProject = create<ProjectState>()((set, get) => ({
   },
 
   saveNow: () => doAutosave(),
+
+  applyCellValues: (cells, values) => {
+    const { grid } = get()
+    if (!grid || cells.length === 0) return
+    const ci: number[] = []
+    const bi: number[] = []
+    const ai: number[] = []
+    for (let i = 0; i < cells.length; i++) {
+      if (grid[cells[i]] !== values[i]) {
+        ci.push(cells[i])
+        bi.push(grid[cells[i]])
+        ai.push(values[i])
+      }
+    }
+    if (ci.length === 0) return
+    const entry: UndoEntry = {
+      kind: 'cells',
+      cells: new Uint32Array(ci),
+      before: new Uint16Array(bi),
+      after: new Uint16Array(ai),
+    }
+    for (let i = 0; i < ci.length; i++) grid[ci[i]] = ai[i]
+    set((st) => ({
+      undoStack: [...st.undoStack.slice(-99), entry],
+      redoStack: [],
+      gridVersion: st.gridVersion + 1,
+    }))
+    scheduleAutosave()
+  },
 
   applyColor: (cells, colorIdx) => {
     const { grid } = get()

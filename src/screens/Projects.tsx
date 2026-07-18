@@ -6,7 +6,7 @@ import { listProjects, deleteProject } from '../lib/db'
 import { decodeImage } from '../lib/convert'
 import { fullPalette, EMPTY } from '../lib/palette'
 import { hexToRgb } from '../lib/color'
-import { buildProjectFile, downloadProjectFile } from '../lib/project'
+import { buildProjectFile, shareProjectFile } from '../lib/project'
 
 /** 도안 미니 썸네일 (1칸=1px 캔버스를 CSS로 축소) */
 function PatternThumb({ entry }: { entry: SavedProject }) {
@@ -66,7 +66,7 @@ export default function Projects() {
 
   const exportEntry = (e: SavedProject) => {
     const json = buildProjectFile(e.name, e.W, e.H, e.dataUrl, new Uint16Array(e.grid), customColors)
-    downloadProjectFile(json, e.name)
+    void shareProjectFile(json, e.name) // 모바일=공유시트(카톡), PC=다운로드
   }
 
   const renameEntry = async (e: SavedProject) => {
@@ -87,8 +87,9 @@ export default function Projects() {
     <div className="library">
       <div className="controls">
         <p className="muted hint pad-h">
-          작업은 수정할 때마다 자동 저장됩니다. [📤 파일]로 내보내면 카톡·메일·USB로 옮겨
-          다른 컴퓨터의 홈 → [작업 파일 열기]에서 이어서 할 수 있어요.
+          작업은 수정할 때마다 자동 저장됩니다. [📤]를 누르면 <strong>공유시트에서 카카오톡</strong>으로
+          바로 보낼 수 있어요(PC는 파일 다운로드). 받는 분은 <strong>카톡에서 파일 탭 → "파일에 저장"</strong> →
+          앱 홈의 <strong>[작업 파일 열기]</strong>에서 그 파일을 고르면 이어서 작업됩니다.
         </p>
         {items === null && <p className="muted pad">불러오는 중…</p>}
         {items?.length === 0 && (
