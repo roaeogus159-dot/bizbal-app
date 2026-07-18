@@ -11,13 +11,15 @@ interface Props {
   onBrushCells?: (idxs: number[]) => void
   /** 브러시 드래그가 끝났을 때 (손을 떼거나 핀치 시작) — 스트로크 확정용 */
   onBrushEnd?: () => void
+  /** 애플펜이 처음 감지돼 펜 모드가 자동으로 켜졌을 때 (1회) */
+  onAutoPen?: () => void
 }
 
 const TAP_MS = 350
 const TAP_DIST = 8
 const LONGPRESS_MS = 450
 
-export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd }: Props) {
+export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd, onAutoPen }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -36,6 +38,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const background = useSettings((s) => s.background)
   const paintMode = useSettings((s) => s.paintMode)
   const expertThreshold = useSettings((s) => s.expertThreshold)
+  const penMode = useSettings((s) => s.penMode)
 
   const palette = useMemo(() => fullPalette(customColors), [customColors])
 
@@ -49,9 +52,10 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const mag = useRef<{ x: number; y: number } | null>(null) // 돋보기(CSS px)
 
   // 포인터 상태
-  const pointers = useRef(new Map<number, { x: number; y: number }>())
+  type Role = 'edit' | 'pan'
+  const pointers = useRef(new Map<number, { x: number; y: number; type: string }>())
   const pinch = useRef<{ dist: number; cx: number; cy: number } | null>(null)
-  const down = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null)
+  const down = useRef<{ x: number; y: number; t: number; moved: boolean; role: Role } | null>(null)
   const brushActive = useRef(false)
   const lastBrushCell = useRef<{ cx: number; cy: number } | null>(null)
   const longTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
@@ -256,18 +260,35 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     clearTimeout(longTimer.current)
   }
 
+  // 포인터 역할: 펜=편집, 마우스 좌클릭=편집·그 외=이동, 손가락=펜모드면 이동·아니면 편집
+  const roleOf = (e: React.PointerEvent): Role => {
+    if (e.pointerType === 'pen') return 'edit'
+    if (e.pointerType === 'mouse') return e.button === 0 ? 'edit' : 'pan'
+    return penMode ? 'pan' : 'edit' // touch
+  }
+  const touchCount = () =>
+    [...pointers.current.values()].filter((q) => q.type === 'touch').length
+
   const onPointerDown = (e: React.PointerEvent) => {
-    canvasRef.current!.setPointerCapture(e.pointerId)
+    try { canvasRef.current!.setPointerCapture(e.pointerId) } catch { /* 이미 해제된 포인터 등 무시 */ }
     const p = toLocal(e)
-    pointers.current.set(e.pointerId, p)
-    if (pointers.current.size === 2) {
-      // 핀치 시작: 진행 중이던 브러시 스트로크는 확정
+    pointers.current.set(e.pointerId, { ...p, type: e.pointerType })
+
+    // 애플펜 첫 감지 → 펜 모드 자동 켜기 (편집 캔버스에서만)
+    if (editable && e.pointerType === 'pen' && !useSettings.getState().penMode) {
+      useSettings.getState().set('penMode', true)
+      onAutoPen?.()
+    }
+
+    // 두 손가락 → 핀치(줌/팬). 펜+손가락은 핀치 아님
+    if (touchCount() >= 2) {
       if (brushActive.current) {
         brushActive.current = false
         lastBrushCell.current = null
         onBrushEnd?.()
       }
-      const [a, b] = [...pointers.current.values()]
+      const ts = [...pointers.current.values()].filter((q) => q.type === 'touch')
+      const [a, b] = ts
       pinch.current = {
         dist: Math.hypot(a.x - b.x, a.y - b.y),
         cx: (a.x + b.x) / 2,
@@ -278,9 +299,13 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       clearLongPress()
       return
     }
-    down.current = { ...p, t: performance.now(), moved: false }
+
+    const role = roleOf(e)
+    down.current = { ...p, t: performance.now(), moved: false, role }
     brushActive.current = false
     lastBrushCell.current = null
+    if (role !== 'edit') return // 이동 전용 포인터: 도구 적용 안 함 (드래그로 팬만)
+
     if (editable && tool === 'brush') {
       const c = cellCoordsAt(p.x, p.y)
       if (c !== null) {
@@ -303,10 +328,10 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     if (!pointers.current.has(e.pointerId)) return
     const p = toLocal(e)
     const prev = pointers.current.get(e.pointerId)!
-    pointers.current.set(e.pointerId, p)
+    pointers.current.set(e.pointerId, { ...p, type: prev.type })
 
-    if (pointers.current.size === 2 && pinch.current) {
-      const [a, b] = [...pointers.current.values()]
+    if (touchCount() >= 2 && pinch.current) {
+      const [a, b] = [...pointers.current.values()].filter((q) => q.type === 'touch')
       const dist = Math.hypot(a.x - b.x, a.y - b.y)
       const cx = (a.x + b.x) / 2
       const cy = (a.y + b.y) / 2
@@ -335,6 +360,18 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       return
     }
 
+    // 이동 전용 포인터(손가락/우클릭): 드래그하면 화면 이동만
+    if (down.current.role === 'pan') {
+      if (down.current.moved) {
+        const v = view.current
+        v.tx += p.x - prev.x
+        v.ty += p.y - prev.y
+        clampView()
+        draw()
+      }
+      return
+    }
+
     if (editable && tool === 'brush') {
       const c = cellCoordsAt(p.x, p.y)
       if (c !== null) {
@@ -357,7 +394,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const onPointerUp = (e: React.PointerEvent) => {
     const p = toLocal(e)
     pointers.current.delete(e.pointerId)
-    if (pointers.current.size < 2) pinch.current = null
+    if (touchCount() < 2) pinch.current = null
     clearLongPress()
 
     if (brushActive.current) {
@@ -379,7 +416,8 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
 
     if (down.current) {
       const dt = performance.now() - down.current.t
-      if (!down.current.moved && dt < TAP_MS) {
+      // 이동 전용 포인터(손가락/우클릭)는 탭해도 도구 적용 안 함
+      if (down.current.role === 'edit' && !down.current.moved && dt < TAP_MS) {
         const c = cellAt(p.x, p.y)
         if (c !== null && editable && tool !== 'brush' && tool !== 'pan') onCellTap?.(c)
       }
@@ -409,6 +447,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onWheel={onWheel}
+        onContextMenu={(e) => e.preventDefault()}
       />
     </div>
   )

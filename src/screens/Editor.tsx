@@ -174,6 +174,7 @@ export default function Editor() {
           onCellTap={onCellTap}
           onBrushCells={onBrushCells}
           onBrushEnd={onBrushEnd}
+          onAutoPen={() => showToast('애플펜 감지 — 이제 손가락은 화면 이동이에요. 도구 바에서 끌 수 있어요')}
         />
         {s.paintMode === 'expert' && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
@@ -202,6 +203,18 @@ export default function Editor() {
             {p.tool === 'bucket' && '그림판 채우기처럼! 아래 색상 바에서 색을 고르고, 채우고 싶은 곳을 탭하면 이어진 같은 색 영역이 한 번에 바뀌어요.'}
             {p.tool === 'magic' && '탭한 칸과 같은 색 전체가 선택됩니다.'}
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
+          </p>
+
+          <label className="toggle-sm">
+            <input
+              type="checkbox"
+              checked={s.penMode}
+              onChange={(e) => s.set('penMode', e.target.checked)}
+            />
+            ✏️ 애플펜 모드 (손가락 = 화면 이동)
+          </label>
+          <p className="muted hint">
+            💡 아이패드: 애플펜=편집 · 손가락=이동 · 두 손가락=확대축소 &nbsp;/&nbsp; PC: 우클릭 드래그=이동
           </p>
 
           <div className="edit-actions" data-guide="edit-actions">
