@@ -172,11 +172,12 @@ interface ProjectState {
 /** 현재 설정 기준 변환 키 — grid가 이 설정으로 만들어졌는지 판별 (불필요한 재변환 방지) */
 export function currentConvertKey(W: number, H: number): string {
   const s = useSettings.getState()
+  // 직접 모드는 빈 칸 격자라 팔레트·색수·디더링과 무관 → W×H만으로 키 구성
+  if (s.paintMode === 'manual') return JSON.stringify(['manual', W, H])
   return JSON.stringify([
     W, H,
-    s.paintMode === 'manual',
     Object.keys(s.disabled).sort(),
-    s.customColors.filter((c) => !c.deleted).length,
+    s.customColors.filter((c) => !c.deleted).map((c) => c.code),
     s.maxColors,
     s.dithering,
   ])
