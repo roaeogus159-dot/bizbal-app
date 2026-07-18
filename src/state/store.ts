@@ -110,11 +110,20 @@ export const useSettings = create<SettingsState>()(
 export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects'
 export type Tool = 'pan' | 'point' | 'brush' | 'bucket' | 'magic' | 'eyedrop'
 
-interface UndoEntry {
+// 칸 편집 (같은 크기 안에서 색만 바뀜)
+interface CellEdit {
+  kind: 'cells'
   cells: Uint32Array
   before: Uint16Array
   after: Uint16Array
 }
+// 크기 변경 (행/열 자르기·추가) — 전/후 스냅샷으로 되돌리기/다시실행
+interface ResizeEdit {
+  kind: 'resize'
+  prevW: number; prevH: number; prevGrid: Uint16Array; prevBase: Uint16Array
+  nextW: number; nextH: number; nextGrid: Uint16Array; nextBase: Uint16Array
+}
+type UndoEntry = CellEdit | ResizeEdit
 
 interface ProjectState {
   screen: Screen
@@ -466,7 +475,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
     for (let i = 0; i < cells.length; i++) after[i] = grid[cells[i]]
     strokeBefore.clear()
     set((st) => ({
-      undoStack: [...st.undoStack.slice(-99), { cells, before, after }],
+      undoStack: [...st.undoStack.slice(-99), { kind: 'cells', cells, before, after }],
       redoStack: [],
     }))
     scheduleAutosave()
@@ -480,6 +489,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
     const changed = cells.filter((c) => grid[c] !== colorIdx)
     if (changed.length === 0) return
     const entry: UndoEntry = {
+      kind: 'cells',
       cells: new Uint32Array(changed),
       before: new Uint16Array(changed.map((c) => grid[c])),
       after: new Uint16Array(changed.length).fill(colorIdx),
@@ -496,26 +506,53 @@ export const useProject = create<ProjectState>()((set, get) => ({
   undo: () => {
     const { undoStack, grid } = get()
     const entry = undoStack[undoStack.length - 1]
-    if (!entry || !grid) return
-    for (let i = 0; i < entry.cells.length; i++) grid[entry.cells[i]] = entry.before[i]
-    set((st) => ({
-      undoStack: st.undoStack.slice(0, -1),
-      redoStack: [...st.redoStack, entry],
-      gridVersion: st.gridVersion + 1,
-    }))
+    if (!entry) return
+    if (entry.kind === 'resize') {
+      // 크기 변경 되돌리기: 이전 크기·격자로 복원
+      set((st) => ({
+        W: entry.prevW, H: entry.prevH,
+        grid: entry.prevGrid.slice(), baseGrid: entry.prevBase.slice(),
+        cellRgb: null, deltaE: null, selection: new Set(),
+        convertedKey: currentConvertKey(entry.prevW, entry.prevH),
+        undoStack: st.undoStack.slice(0, -1),
+        redoStack: [...st.redoStack, entry],
+        gridVersion: st.gridVersion + 1,
+      }))
+    } else {
+      if (!grid) return
+      for (let i = 0; i < entry.cells.length; i++) grid[entry.cells[i]] = entry.before[i]
+      set((st) => ({
+        undoStack: st.undoStack.slice(0, -1),
+        redoStack: [...st.redoStack, entry],
+        gridVersion: st.gridVersion + 1,
+      }))
+    }
     scheduleAutosave()
   },
 
   redo: () => {
     const { redoStack, grid } = get()
     const entry = redoStack[redoStack.length - 1]
-    if (!entry || !grid) return
-    for (let i = 0; i < entry.cells.length; i++) grid[entry.cells[i]] = entry.after[i]
-    set((st) => ({
-      redoStack: st.redoStack.slice(0, -1),
-      undoStack: [...st.undoStack, entry],
-      gridVersion: st.gridVersion + 1,
-    }))
+    if (!entry) return
+    if (entry.kind === 'resize') {
+      set((st) => ({
+        W: entry.nextW, H: entry.nextH,
+        grid: entry.nextGrid.slice(), baseGrid: entry.nextBase.slice(),
+        cellRgb: null, deltaE: null, selection: new Set(),
+        convertedKey: currentConvertKey(entry.nextW, entry.nextH),
+        redoStack: st.redoStack.slice(0, -1),
+        undoStack: [...st.undoStack, entry],
+        gridVersion: st.gridVersion + 1,
+      }))
+    } else {
+      if (!grid) return
+      for (let i = 0; i < entry.cells.length; i++) grid[entry.cells[i]] = entry.after[i]
+      set((st) => ({
+        redoStack: st.redoStack.slice(0, -1),
+        undoStack: [...st.undoStack, entry],
+        gridVersion: st.gridVersion + 1,
+      }))
+    }
     scheduleAutosave()
   },
 
@@ -530,6 +567,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
       return
     }
     const entry: UndoEntry = {
+      kind: 'cells',
       cells: new Uint32Array(idxs),
       before: new Uint16Array(idxs.map((i) => grid[i])),
       after: new Uint16Array(idxs.map((i) => baseGrid[i])),
@@ -566,8 +604,15 @@ export const useProject = create<ProjectState>()((set, get) => ({
       }
       return out
     }
+    const prevBase = baseGrid ?? grid.slice()
     const newGrid = remap(grid)
-    const newBase = baseGrid ? remap(baseGrid) : newGrid.slice()
+    const newBase = remap(prevBase)
+    // 크기 변경 스냅샷을 되돌리기 기록에 추가 (자르기·추가도 undo/redo 가능)
+    const entry: UndoEntry = {
+      kind: 'resize',
+      prevW: W, prevH: H, prevGrid: grid.slice(), prevBase: prevBase.slice(),
+      nextW: nW, nextH: nH, nextGrid: newGrid.slice(), nextBase: newBase.slice(),
+    }
     set((st) => ({
       W: nW, H: nH,
       grid: newGrid,
@@ -575,7 +620,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
       cellRgb: null, // 격자 크기가 바뀌어 원본 대표색·ΔE는 무효화 (전문가 강조는 재변환 시 복원)
       deltaE: null,
       selection: new Set(),
-      undoStack: [], // 크기가 바뀌면 이전 undo 인덱스가 무효
+      undoStack: [...st.undoStack.slice(-99), entry],
       redoStack: [],
       gridVersion: st.gridVersion + 1,
       // 재변환 없이 이 크기의 grid를 '현재'로 확정 → 변환 화면에서 자동 재변환 안 함

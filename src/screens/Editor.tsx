@@ -338,7 +338,7 @@ export default function Editor() {
               <button className="btn-sm btn-warn" onClick={() => p.cropGrid('right', -1)}>－자르기</button>
             </div>
           </div>
-          <p className="muted hint">※ 자른 줄은 되돌리기로 복구되지 않아요(반대쪽 [＋추가]로 빈 줄을 다시 넣을 수 있어요).</p>
+          <p className="muted hint">※ 자르기·추가도 [↩️ 되돌리기]로 취소할 수 있어요.</p>
         </details>
       </div>
 
