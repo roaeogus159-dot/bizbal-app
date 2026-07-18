@@ -11,15 +11,13 @@ interface Props {
   onBrushCells?: (idxs: number[]) => void
   /** 브러시 드래그가 끝났을 때 (손을 떼거나 핀치 시작) — 스트로크 확정용 */
   onBrushEnd?: () => void
-  /** 올가미: 그린 자유형 경로(셀 좌표계 float 꼭짓점)가 완성됐을 때 */
-  onLasso?: (polyX: number[], polyY: number[]) => void
 }
 
 const TAP_MS = 350
 const TAP_DIST = 8
 const LONGPRESS_MS = 450
 
-export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd, onLasso }: Props) {
+export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBrushEnd }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const wrapRef = useRef<HTMLDivElement>(null)
 
@@ -56,7 +54,6 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const down = useRef<{ x: number; y: number; t: number; moved: boolean } | null>(null)
   const brushActive = useRef(false)
   const lastBrushCell = useRef<{ cx: number; cy: number } | null>(null)
-  const lassoPts = useRef<{ x: number; y: number }[]>([]) // 올가미 경로 (CSS px)
   const longTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const cssSize = () => {
@@ -178,24 +175,6 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
         ctx.stroke()
         ctx.restore()
       }
-
-      // 올가미 경로 오버레이 (그리는 중)
-      if (lassoPts.current.length > 1) {
-        ctx.save()
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
-        const pts = lassoPts.current
-        ctx.beginPath()
-        ctx.moveTo(pts[0].x, pts[0].y)
-        for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y)
-        ctx.closePath()
-        ctx.fillStyle = 'rgba(30,120,255,0.14)'
-        ctx.fill()
-        ctx.setLineDash([6, 4])
-        ctx.lineWidth = 2
-        ctx.strokeStyle = '#1e78ff'
-        ctx.stroke()
-        ctx.restore()
-      }
     })
   }
 
@@ -302,16 +281,12 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     down.current = { ...p, t: performance.now(), moved: false }
     brushActive.current = false
     lastBrushCell.current = null
-    lassoPts.current = []
     if (editable && tool === 'brush') {
       const c = cellCoordsAt(p.x, p.y)
       if (c !== null) {
         brushActive.current = true
         brushLineTo(c)
       }
-    }
-    if (editable && tool === 'lasso') {
-      lassoPts.current = [p]
     }
     if (editable && tool === 'point') {
       clearLongPress()
@@ -369,12 +344,6 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       return
     }
 
-    if (editable && tool === 'lasso') {
-      lassoPts.current.push(p)
-      draw()
-      return
-    }
-
     if (down.current.moved) {
       clearLongPress()
       const v = view.current
@@ -397,20 +366,6 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       onBrushEnd?.()
     }
 
-    // 올가미 완성 → 경로를 셀 좌표로 변환해 콜백
-    if (editable && tool === 'lasso' && lassoPts.current.length >= 3) {
-      const v = view.current
-      const pts = lassoPts.current
-      const polyX = pts.map((q) => (q.x - v.tx) / v.s)
-      const polyY = pts.map((q) => (q.y - v.ty) / v.s)
-      lassoPts.current = []
-      onLasso?.(polyX, polyY)
-      draw()
-      down.current = null
-      return
-    }
-    lassoPts.current = []
-
     const wasMag = mag.current
     if (wasMag) {
       mag.current = null
@@ -426,8 +381,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
       const dt = performance.now() - down.current.t
       if (!down.current.moved && dt < TAP_MS) {
         const c = cellAt(p.x, p.y)
-        if (c !== null && editable && tool !== 'brush' && tool !== 'lasso' && tool !== 'pan')
-          onCellTap?.(c)
+        if (c !== null && editable && tool !== 'brush' && tool !== 'pan') onCellTap?.(c)
       }
       down.current = null
     }

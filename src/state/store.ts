@@ -108,7 +108,7 @@ export const useSettings = create<SettingsState>()(
 // ---------- 프로젝트 상태 (메모리) ----------
 
 export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects'
-export type Tool = 'pan' | 'point' | 'brush' | 'lasso' | 'magic' | 'eyedrop'
+export type Tool = 'pan' | 'point' | 'brush' | 'bucket' | 'magic' | 'eyedrop'
 
 interface UndoEntry {
   cells: Uint32Array

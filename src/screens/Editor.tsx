@@ -5,7 +5,7 @@ import type { Tool } from '../state/store'
 import { fullPalette, enabledIndices, EMPTY } from '../lib/palette'
 import { rgbToLab, deltaE2000 } from '../lib/color'
 import { buildLegend } from '../lib/pattern'
-import { enclosedCells } from '../lib/geom'
+import { floodFillRegion } from '../lib/geom'
 import PreviewCanvas from '../components/PreviewCanvas'
 import PaletteSheet from '../components/PaletteSheet'
 import BeadSwatch from '../components/BeadSwatch'
@@ -15,7 +15,7 @@ const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: 'pan', label: '이동', icon: '✋' },
   { id: 'point', label: '점 선택', icon: '👆' },
   { id: 'brush', label: '칠하기', icon: '🖌️' },
-  { id: 'lasso', label: '영역 채우기', icon: '🪣' },
+  { id: 'bucket', label: '채우기', icon: '🪣' },
   { id: 'magic', label: '같은 색', icon: '🪄' },
   { id: 'eyedrop', label: '스포이드', icon: '💧' },
 ]
@@ -81,6 +81,22 @@ export default function Editor() {
       p.pushRecentColor(grid[idx])
       return
     }
+    // 채우기(그림판 페인트통): 탭한 칸과 이어진 같은 색 영역을 현재 색으로
+    if (p.tool === 'bucket') {
+      if (currentColor === null) {
+        showToast('먼저 아래 색상 바에서 채울 색을 골라 주세요')
+        return
+      }
+      if (grid[idx] === currentColor) return
+      const cells = floodFillRegion(grid, p.W, p.H, idx)
+      p.applyColor(cells, currentColor)
+      showToast(
+        currentColor === EMPTY
+          ? `이어진 ${cells.length.toLocaleString()}칸을 빈칸으로 지웠어요`
+          : `이어진 ${cells.length.toLocaleString()}칸을 ${colorName(currentColor)}(으)로 채웠어요`,
+      )
+      return
+    }
     if (p.tool === 'magic') {
       const target = grid[idx]
       const sel = new Set(p.selection)
@@ -108,31 +124,12 @@ export default function Editor() {
     p.strokeCommit()
   }
 
-  // 영역 채우기: 자유형으로 그린 영역 안쪽을 현재 색으로 한 번에 채움 (한 번의 되돌리기로 취소)
-  const onLasso = (polyX: number[], polyY: number[]) => {
-    if (currentColor === null) {
-      showToast('먼저 아래 색상 바에서 채울 색을 골라 주세요')
-      return
-    }
-    const cells = enclosedCells(polyX, polyY, p.W, p.H)
-    if (cells.length === 0) {
-      showToast('영역이 너무 작거나 닫히지 않았어요')
-      return
-    }
-    p.applyColor(cells, currentColor)
-    showToast(
-      currentColor === EMPTY
-        ? `${cells.length.toLocaleString()}칸을 빈칸으로 지웠어요`
-        : `${cells.length.toLocaleString()}칸을 ${colorName(currentColor)}(으)로 채웠어요`,
-    )
-  }
-
   const applyColor = (colorIdx: number) => {
     setCurrentColor(colorIdx) // 고른 색은 칠하기용 현재 색으로도 지정
     p.pushRecentColor(colorIdx)
     if (p.selection.size === 0) {
-      // 칠할 색만 고른 것 → 바로 칠할 수 있게 칠하기 도구로 전환
-      if (p.tool !== 'brush') p.setTool('brush')
+      // 칠할 색만 고른 것 → 바로 칠/채우기 할 수 있게 (이미 칠하기/채우기면 그대로)
+      if (p.tool !== 'brush' && p.tool !== 'bucket') p.setTool('brush')
       setSheetOpen(false)
       return
     }
@@ -151,7 +148,7 @@ export default function Editor() {
     } else {
       setCurrentColor(colorIdx)
       p.pushRecentColor(colorIdx)
-      if (p.tool !== 'brush') p.setTool('brush')
+      if (p.tool !== 'brush' && p.tool !== 'bucket') p.setTool('brush')
     }
   }
 
@@ -177,7 +174,6 @@ export default function Editor() {
           onCellTap={onCellTap}
           onBrushCells={onBrushCells}
           onBrushEnd={onBrushEnd}
-          onLasso={onLasso}
         />
         {s.paintMode === 'expert' && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
@@ -203,7 +199,7 @@ export default function Editor() {
             {p.tool === 'pan' && '한 손가락으로 이동, 두 손가락으로 확대/축소합니다.'}
             {p.tool === 'point' && '탭으로 칸 선택/해제 (여러 칸 가능). 길게 누르면 돋보기가 떠요.'}
             {p.tool === 'brush' && '드래그하면 현재 색으로 바로 칠해져요. 지나온 경로를 거꾸로 되짚으면 그만큼 취소! 손을 떼면 확정됩니다. (색은 아래 색상 바에서 선택)'}
-            {p.tool === 'lasso' && '아래 색상 바에서 색을 고른 뒤, 채울 부분을 자유형으로 빙 둘러 그리세요. 손을 떼면 그 안쪽이 한 번에 채워져요. (큰 영역을 빠르게 칠할 때!)'}
+            {p.tool === 'bucket' && '그림판 채우기처럼! 아래 색상 바에서 색을 고르고, 채우고 싶은 곳을 탭하면 이어진 같은 색 영역이 한 번에 바뀌어요.'}
             {p.tool === 'magic' && '탭한 칸과 같은 색 전체가 선택됩니다.'}
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
           </p>
