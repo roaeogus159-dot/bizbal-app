@@ -146,6 +146,8 @@ interface ProjectState {
   // 원본 사진 오버레이 (직접 대조용)
   overlayOn: boolean
   overlayAlpha: number
+  // 인쇄 도안식 격자 보기 (칸 색+순번, 5/10칸 선, 좌표)
+  chartOn: boolean
   // 에디터
   tool: Tool
   selection: Set<number>
@@ -154,6 +156,7 @@ interface ProjectState {
   recentColors: number[] // 최근에 고른 색 (앞이 가장 최근)
 
   setOverlay: (on: boolean, alpha?: number) => void
+  setChart: (on: boolean) => void
   go: (s: Screen) => void
   setImage: (img: SourceImage) => void
   setSize: (W: number, H: number) => void
@@ -306,6 +309,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
   convertedKey: null,
   overlayOn: false,
   overlayAlpha: 0.5,
+  chartOn: false,
   tool: 'point',
   selection: new Set(),
   undoStack: [],
@@ -314,6 +318,8 @@ export const useProject = create<ProjectState>()((set, get) => ({
 
   setOverlay: (on, alpha) =>
     set((st) => ({ overlayOn: on, overlayAlpha: alpha ?? st.overlayAlpha })),
+
+  setChart: (on) => set({ chartOn: on }),
 
   go: (s) => set((st) => ({ screen: s, prevScreen: st.screen })),
 

@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useRef } from 'react'
 import { useProject, useSettings } from '../state/store'
 import { fullPalette } from '../lib/palette'
+import { buildLegend, legendNumberMap } from '../lib/pattern'
 import { drawGrid, makeOverviewBitmap, paintBackground } from '../lib/render'
 import type { ViewTransform } from '../lib/render'
 
@@ -35,6 +36,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const image = useProject((s) => s.image)
   const overlayOn = useProject((s) => s.overlayOn)
   const overlayAlpha = useProject((s) => s.overlayAlpha)
+  const chartOn = useProject((s) => s.chartOn)
   const customColors = useSettings((s) => s.customColors)
   const materialView = useSettings((s) => s.materialView)
   const background = useSettings((s) => s.background)
@@ -43,6 +45,13 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
   const penMode = useSettings((s) => s.penMode)
 
   const palette = useMemo(() => fullPalette(customColors), [customColors])
+
+  // 격자 보기용 순번 (색상 개수표·인쇄 도안과 동일한 번호)
+  const chartNum = useMemo(
+    () => (chartOn && grid ? legendNumberMap(buildLegend(grid)) : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [chartOn, grid, gridVersion],
+  )
 
   const view = useRef<ViewTransform>({ s: 10, tx: 0, ty: 0 })
   const fittedFor = useRef('')
@@ -135,6 +144,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
             : null,
         overlay,
         cross: editable ? cross : null,
+        chart: chartNum ? { num: chartNum } : null,
       })
       // 돋보기
       if (mag.current) {
@@ -162,6 +172,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
           selection: editable ? selection : null,
           highlight: null,
           overlay,
+          chart: chartNum ? { num: chartNum } : null,
         })
         ctx.restore()
         ctx.save()
@@ -194,7 +205,7 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     }
     draw()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable, overlayOn, overlayAlpha, image, cross])
+  }, [grid, W, H, gridVersion, selection, materialView, background, paintMode, expertThreshold, palette, editable, overlayOn, overlayAlpha, image, cross, chartOn, chartNum])
 
   useEffect(() => {
     const ro = new ResizeObserver(() => {
@@ -428,7 +439,9 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     }
   }
 
-  const onWheel = (e: React.WheelEvent) => {
+  // 휠 줌: React onWheel은 passive라 preventDefault 경고가 나서 non-passive로 직접 등록
+  const wheelRef = useRef<(e: WheelEvent) => void>(() => {})
+  wheelRef.current = (e: WheelEvent) => {
     e.preventDefault()
     const p = toLocal(e)
     const v = view.current
@@ -439,6 +452,13 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
     clampView()
     draw()
   }
+  useEffect(() => {
+    const cv = canvasRef.current
+    if (!cv) return
+    const h = (e: WheelEvent) => wheelRef.current(e)
+    cv.addEventListener('wheel', h, { passive: false })
+    return () => cv.removeEventListener('wheel', h)
+  }, [])
 
   return (
     <div ref={wrapRef} className="preview-wrap">
@@ -449,7 +469,6 @@ export default function PreviewCanvas({ editable, onCellTap, onBrushCells, onBru
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
-        onWheel={onWheel}
         onContextMenu={(e) => e.preventDefault()}
       />
     </div>

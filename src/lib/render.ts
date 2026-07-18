@@ -1,7 +1,7 @@
 // 비즈 렌더링: 스프라이트 프리렌더(재질감 포함) + 뷰포트 컬링 그리드 드로잉
 import type { BeadColor, Finish } from './palette'
 import { EMPTY } from './palette'
-import { hexToRgb, rgbToHex } from './color'
+import { hexToRgb, rgbToHex, isLight } from './color'
 
 export type RenderMode = 'flat' | 'material'
 export type Background = 'white' | 'backlit' | 'dark'
@@ -219,6 +219,8 @@ export interface DrawOptions {
   overlay?: { source: CanvasImageSource; alpha: number } | null
   /** 행/열 이동 대상 강조 (해당 행·열에 반투명 밴드) */
   cross?: { x: number; y: number } | null
+  /** 인쇄 도안식 격자 보기: 칸=사각+순번, 5/10칸 선, 가장자리 좌표 (num: 팔레트 인덱스→순번) */
+  chart?: { num: Map<number, number> } | null
 }
 
 /** 메인 그리드 드로잉 (뷰포트 컬링, dpr 반영) */
@@ -248,6 +250,40 @@ export function drawGrid(
   if (useOverview && opts.overview) {
     ctx.imageSmoothingEnabled = s < 1.5
     ctx.drawImage(opts.overview, tx, ty, W * s, H * s)
+  } else if (opts.chart) {
+    // 인쇄 도안식 격자: 사각 칸 채움 + 순번 숫자
+    const rgbCache = palette.map((c) => hexToRgb(c.hex))
+    const showNum = s >= 14
+    if (showNum) {
+      ctx.font = `bold ${Math.max(7, Math.floor(s * 0.42))}px sans-serif`
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+    }
+    for (let y = y0; y < y1; y++) {
+      for (let x = x0; x < x1; x++) {
+        const v = grid[y * W + x]
+        const c = palette[v]
+        const px = tx + x * s
+        const py = ty + y * s
+        if (!c) {
+          if (v === EMPTY) {
+            ctx.fillStyle = 'rgba(255,255,255,0.65)'
+            ctx.fillRect(px, py, s, s)
+          }
+          continue
+        }
+        ctx.fillStyle = c.hex
+        ctx.fillRect(px, py, s, s)
+        if (showNum) {
+          const n = opts.chart.num.get(v)
+          if (n !== undefined) {
+            const [r, g, b] = rgbCache[v] ?? [255, 255, 255]
+            ctx.fillStyle = isLight(r, g, b) ? '#000' : '#fff'
+            ctx.fillText(String(n), px + s / 2, py + s / 2 + 0.5)
+          }
+        }
+      }
+    }
   } else {
     const spriteSize = Math.round(s * dpr)
     for (let y = y0; y < y1; y++) {
@@ -273,8 +309,62 @@ export function drawGrid(
     ctx.restore()
   }
 
-  // 격자 보조선 (편집 뷰 고배율)
-  if (opts.showGridLines && s >= 10) {
+  // 격자 보조선
+  if (opts.chart) {
+    // 인쇄 도안식: 매 칸 얇은 선 · 5칸 중간 선 · 10칸 굵은 선 (전역 좌표 기준)
+    const lineFor = (v: number): [string, number] =>
+      v % 10 === 0 ? ['rgba(0,0,0,0.9)', Math.max(1.5, s * 0.06)]
+      : v % 5 === 0 ? ['rgba(0,0,0,0.55)', 1]
+      : ['rgba(0,0,0,0.25)', 0.5]
+    if (s >= 4) {
+      for (let x = x0; x <= x1; x++) {
+        const [col, lw] = lineFor(x)
+        if (s < 7 && x % 5 !== 0) continue // 축소 시 얇은 선 생략
+        ctx.strokeStyle = col
+        ctx.lineWidth = lw
+        ctx.beginPath()
+        ctx.moveTo(tx + x * s, ty + y0 * s)
+        ctx.lineTo(tx + x * s, ty + y1 * s)
+        ctx.stroke()
+      }
+      for (let y = y0; y <= y1; y++) {
+        const [col, lw] = lineFor(y)
+        if (s < 7 && y % 5 !== 0) continue
+        ctx.strokeStyle = col
+        ctx.lineWidth = lw
+        ctx.beginPath()
+        ctx.moveTo(tx + x0 * s, ty + y * s)
+        ctx.lineTo(tx + x1 * s, ty + y * s)
+        ctx.stroke()
+      }
+    }
+    // 가장자리 좌표 (보이는 범위의 1·5의 배수, 화면 상단·좌측에 고정)
+    if (s >= 4) {
+      const step = s >= 10 ? 5 : 10
+      ctx.font = 'bold 11px sans-serif'
+      ctx.textAlign = 'center'
+      ctx.textBaseline = 'middle'
+      ctx.lineWidth = 3
+      ctx.strokeStyle = 'rgba(255,255,255,0.85)'
+      for (let x = x0; x < x1; x++) {
+        const label = x + 1
+        if (label !== 1 && label % step !== 0) continue
+        const cxp = tx + x * s + s / 2
+        ctx.strokeText(String(label), cxp, 10)
+        ctx.fillStyle = '#333'
+        ctx.fillText(String(label), cxp, 10)
+      }
+      ctx.textAlign = 'left'
+      for (let y = y0; y < y1; y++) {
+        const label = y + 1
+        if (label !== 1 && label % step !== 0) continue
+        const cyp = ty + y * s + s / 2
+        ctx.strokeText(String(label), 4, cyp)
+        ctx.fillStyle = '#333'
+        ctx.fillText(String(label), 4, cyp)
+      }
+    }
+  } else if (opts.showGridLines && s >= 10) {
     ctx.strokeStyle = 'rgba(0,0,0,0.15)'
     ctx.lineWidth = 0.5
     ctx.beginPath()

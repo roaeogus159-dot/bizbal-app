@@ -71,8 +71,8 @@ export const GUIDES: Record<Screen, GuideStep[]> = {
     },
     {
       target: '[data-guide="overlay"]',
-      title: '② 원본 사진 겹쳐보기',
-      text: '[원본] 버튼을 켜면 원본 사진이 도안 위에 반투명하게 겹쳐져요. 원본과 비교하면서 어색한 칸을 찾아보세요.',
+      title: '② 원본 겹쳐보기·격자 보기',
+      text: '[원본]을 켜면 원본 사진이 반투명하게 겹쳐지고, [격자]를 켜면 인쇄 도안처럼 칸 색+순번+5/10칸 선으로 보여요. 확대하면 순번 숫자가 나타납니다.',
     },
     {
       target: '[data-guide="edit-actions"]',
