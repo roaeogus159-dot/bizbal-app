@@ -5,6 +5,7 @@ import type { Tool } from '../state/store'
 import { fullPalette, enabledIndices, EMPTY } from '../lib/palette'
 import { rgbToLab, deltaE2000 } from '../lib/color'
 import { buildLegend } from '../lib/pattern'
+import { enclosedCells } from '../lib/geom'
 import PreviewCanvas from '../components/PreviewCanvas'
 import PaletteSheet from '../components/PaletteSheet'
 import BeadSwatch from '../components/BeadSwatch'
@@ -14,6 +15,7 @@ const TOOLS: { id: Tool; label: string; icon: string }[] = [
   { id: 'pan', label: '이동', icon: '✋' },
   { id: 'point', label: '점 선택', icon: '👆' },
   { id: 'brush', label: '칠하기', icon: '🖌️' },
+  { id: 'lasso', label: '영역 선택', icon: '➰' },
   { id: 'magic', label: '같은 색', icon: '🪄' },
   { id: 'eyedrop', label: '스포이드', icon: '💧' },
 ]
@@ -106,6 +108,19 @@ export default function Editor() {
     p.strokeCommit()
   }
 
+  // 올가미: 그린 자유형 영역 안쪽 칸을 선택에 추가 (색은 이후 [색 교체]·색상 바로 채움)
+  const onLasso = (polyX: number[], polyY: number[]) => {
+    const cells = enclosedCells(polyX, polyY, p.W, p.H)
+    if (cells.length === 0) {
+      showToast('영역이 너무 작거나 닫히지 않았어요')
+      return
+    }
+    const sel = new Set(p.selection)
+    for (const c of cells) sel.add(c)
+    p.setSelection(sel)
+    showToast(`${cells.length.toLocaleString()}칸 선택됨 · 아래 색상 바나 [색 교체]로 채우세요`)
+  }
+
   const applyColor = (colorIdx: number) => {
     setCurrentColor(colorIdx) // 고른 색은 칠하기용 현재 색으로도 지정
     p.pushRecentColor(colorIdx)
@@ -151,7 +166,13 @@ export default function Editor() {
   return (
     <div className="split">
       <div className="preview-area">
-        <PreviewCanvas editable onCellTap={onCellTap} onBrushCells={onBrushCells} onBrushEnd={onBrushEnd} />
+        <PreviewCanvas
+          editable
+          onCellTap={onCellTap}
+          onBrushCells={onBrushCells}
+          onBrushEnd={onBrushEnd}
+          onLasso={onLasso}
+        />
         {s.paintMode === 'expert' && (
           <div className="expert-badge">변경 권장 {expertCount.toLocaleString()}칸</div>
         )}
@@ -176,6 +197,7 @@ export default function Editor() {
             {p.tool === 'pan' && '한 손가락으로 이동, 두 손가락으로 확대/축소합니다.'}
             {p.tool === 'point' && '탭으로 칸 선택/해제 (여러 칸 가능). 길게 누르면 돋보기가 떠요.'}
             {p.tool === 'brush' && '드래그하면 현재 색으로 바로 칠해져요. 지나온 경로를 거꾸로 되짚으면 그만큼 취소! 손을 떼면 확정됩니다. (색은 아래 색상 바에서 선택)'}
+            {p.tool === 'lasso' && '자유형으로 영역을 빙 둘러 그리면 그 안쪽 칸이 선택돼요. 손을 떼면 완성! 그다음 아래 색상 바나 [색 교체]로 한 번에 채우세요.'}
             {p.tool === 'magic' && '탭한 칸과 같은 색 전체가 선택됩니다.'}
             {p.tool === 'eyedrop' && '탭한 칸의 색을 현재 색으로 가져옵니다.'}
           </p>
