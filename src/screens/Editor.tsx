@@ -307,6 +307,39 @@ export default function Editor() {
             </label>
           )}
         </div>
+
+        {/* 도안 크기 편집: 가장자리 행/열 추가(빈 칸)·자르기 */}
+        <details className="card">
+          <summary>✂️ 행·열 자르기 / 추가 <span className="muted">(현재 {p.W}×{p.H}칸)</span></summary>
+          <p className="muted hint">
+            가장자리 줄을 자르거나(필요 없는 부분 제거) 빈 칸 줄을 추가해요. 재변환 없이 도안만 바뀝니다.
+          </p>
+          <div className="crop-grid">
+            <span className="crop-lbl">가로줄(행)</span>
+            <div className="crop-btns">
+              <span>위</span>
+              <button className="btn-sm btn-secondary" onClick={() => p.cropGrid('top', 1)}>＋추가</button>
+              <button className="btn-sm btn-warn" onClick={() => p.cropGrid('top', -1)}>－자르기</button>
+            </div>
+            <div className="crop-btns">
+              <span>아래</span>
+              <button className="btn-sm btn-secondary" onClick={() => p.cropGrid('bottom', 1)}>＋추가</button>
+              <button className="btn-sm btn-warn" onClick={() => p.cropGrid('bottom', -1)}>－자르기</button>
+            </div>
+            <span className="crop-lbl">세로줄(열)</span>
+            <div className="crop-btns">
+              <span>왼쪽</span>
+              <button className="btn-sm btn-secondary" onClick={() => p.cropGrid('left', 1)}>＋추가</button>
+              <button className="btn-sm btn-warn" onClick={() => p.cropGrid('left', -1)}>－자르기</button>
+            </div>
+            <div className="crop-btns">
+              <span>오른쪽</span>
+              <button className="btn-sm btn-secondary" onClick={() => p.cropGrid('right', 1)}>＋추가</button>
+              <button className="btn-sm btn-warn" onClick={() => p.cropGrid('right', -1)}>－자르기</button>
+            </div>
+          </div>
+          <p className="muted hint">※ 자른 줄은 되돌리기로 복구되지 않아요(반대쪽 [＋추가]로 빈 줄을 다시 넣을 수 있어요).</p>
+        </details>
       </div>
 
       <div className="bottom-bar" data-guide="actions">

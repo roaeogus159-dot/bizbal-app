@@ -1,6 +1,17 @@
 // 도안 파생 데이터: 색상 개수표(범례 순번), 세로 줄(스트랜드) 런렝스·길이
-import type { BeadColor } from './palette'
+import type { BeadColor, Finish } from './palette'
 import { EMPTY } from './palette'
+
+/** 종류·지름별 실측 지름(mm) — 줄 길이 계산용.
+ *  8mm: 불투명·반투명 7.6 / 투명·오로라 8.0
+ *  6mm: 불투명·반투명 5.6 / 투명·오로라 5.8
+ *  4mm 등: 표기값 그대로 */
+export function actualBeadMm(diameterMm: number, finish: Finish): number {
+  const glassy = finish === 'transparent' || finish === 'aurora'
+  if (diameterMm === 8) return glassy ? 8.0 : 7.6
+  if (diameterMm === 6) return glassy ? 5.8 : 5.6
+  return diameterMm
+}
 
 export interface LegendEntry {
   paletteIdx: number
@@ -59,15 +70,21 @@ export interface StrandLengths {
   devMm: number // 최대 편차 (max-min)
 }
 
-/** 줄별 예상 길이: 볼 종류별 실제 지름(sizeMm) 합 */
+/** 줄별 예상 길이: 종류·지름별 실측 지름 합 (커스텀 색은 입력한 실제 지름, 빈 칸은 0) */
 export function strandLengths(
-  grid: Uint16Array, W: number, H: number, palette: BeadColor[],
+  grid: Uint16Array, W: number, H: number, palette: BeadColor[], diameterMm: number,
 ): StrandLengths {
-  const size = palette.map((c) => c.sizeMm)
+  const lenOf = (idx: number): number => {
+    if (idx === EMPTY) return 0
+    const c = palette[idx]
+    if (!c) return actualBeadMm(diameterMm, 'opaque')
+    if (c.custom) return c.sizeMm // 커스텀 색: 사용자가 입력한 실제 지름
+    return actualBeadMm(diameterMm, c.finish)
+  }
   const mm: number[] = []
   for (let x = 0; x < W; x++) {
     let sum = 0
-    for (let y = 0; y < H; y++) sum += size[grid[y * W + x]] ?? 8
+    for (let y = 0; y < H; y++) sum += lenOf(grid[y * W + x])
     mm.push(sum)
   }
   const minMm = Math.min(...mm)

@@ -806,6 +806,29 @@ details.card summary {
   background: var(--primary-soft);
 }
 
+/* 행·열 자르기/추가 */
+.crop-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.crop-lbl {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+  margin-top: 4px;
+}
+.crop-btns {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.crop-btns > span:first-child {
+  min-width: 42px;
+  font-size: 13.5px;
+}
+.crop-btns button { flex: 1; }
+
 /* ---------- 결과 ---------- */
 .result {
   flex: 1;

@@ -252,10 +252,10 @@ function renderLegendPage(
 // ---------- (C) 세로 줄(스트랜드) 순서표 ----------
 
 export function renderStrandSheets(
-  grid: Uint16Array, W: number, H: number, palette: BeadColor[],
+  grid: Uint16Array, W: number, H: number, palette: BeadColor[], diameterMm: number,
 ): HTMLCanvasElement[] {
   const runs = strandRuns(grid, W, H)
-  const lens = strandLengths(grid, W, H, palette)
+  const lens = strandLengths(grid, W, H, palette, diameterMm)
   const pages: HTMLCanvasElement[] = []
 
   const lineH = 54

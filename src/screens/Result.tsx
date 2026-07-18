@@ -31,9 +31,9 @@ export default function Result() {
   const [savedMsg, setSavedMsg] = useState('')
 
   const lens = useMemo(
-    () => (grid ? strandLengths(grid, W, H, palette) : null),
+    () => (grid ? strandLengths(grid, W, H, palette, diameterMm) : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [grid, W, H, palette, gridVersion],
+    [grid, W, H, palette, gridVersion, diameterMm],
   )
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function Result() {
       if (dead) return
       setPrints(printFiles)
 
-      const sheets = renderStrandSheets(grid, W, H, palette)
+      const sheets = renderStrandSheets(grid, W, H, palette, diameterMm)
       const strandFiles: OutFile[] = []
       for (let i = 0; i < sheets.length; i++) {
         strandFiles.push(

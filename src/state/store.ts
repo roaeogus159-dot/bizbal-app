@@ -162,6 +162,8 @@ interface ProjectState {
   undo: () => void
   redo: () => void
   resetEdits: () => void
+  /** 가장자리 행/열 추가(빈 칸)·자르기. 재변환 없이 도안만 변경 */
+  cropGrid: (edge: 'top' | 'bottom' | 'left' | 'right', delta: 1 | -1) => void
   setProjectName: (name: string) => void
   restore: (
     img: SourceImage, W: number, H: number, grid: Uint16Array,
@@ -538,6 +540,46 @@ export const useProject = create<ProjectState>()((set, get) => ({
       undoStack: [...st.undoStack.slice(-99), entry],
       redoStack: [],
       gridVersion: st.gridVersion + 1,
+    }))
+    scheduleAutosave()
+  },
+
+  cropGrid: (edge, delta) => {
+    const { grid, baseGrid, W, H } = get()
+    if (!grid) return
+    const nW = edge === 'left' || edge === 'right' ? W + delta : W
+    const nH = edge === 'top' || edge === 'bottom' ? H + delta : H
+    if (nW < 1 || nH < 1) return
+    // 원본(src) 좌표 → 새(dst) 좌표 오프셋
+    const dx = edge === 'left' ? delta : 0 // 왼쪽 추가 시 기존 칸이 오른쪽으로 밀림(+1)
+    const dy = edge === 'top' ? delta : 0
+    const remap = (src: Uint16Array): Uint16Array => {
+      const out = new Uint16Array(nW * nH).fill(EMPTY)
+      for (let y = 0; y < H; y++) {
+        const ny = y + dy
+        if (ny < 0 || ny >= nH) continue
+        for (let x = 0; x < W; x++) {
+          const nx = x + dx
+          if (nx < 0 || nx >= nW) continue
+          out[ny * nW + nx] = src[y * W + x]
+        }
+      }
+      return out
+    }
+    const newGrid = remap(grid)
+    const newBase = baseGrid ? remap(baseGrid) : newGrid.slice()
+    set((st) => ({
+      W: nW, H: nH,
+      grid: newGrid,
+      baseGrid: newBase,
+      cellRgb: null, // 격자 크기가 바뀌어 원본 대표색·ΔE는 무효화 (전문가 강조는 재변환 시 복원)
+      deltaE: null,
+      selection: new Set(),
+      undoStack: [], // 크기가 바뀌면 이전 undo 인덱스가 무효
+      redoStack: [],
+      gridVersion: st.gridVersion + 1,
+      // 재변환 없이 이 크기의 grid를 '현재'로 확정 → 변환 화면에서 자동 재변환 안 함
+      convertedKey: currentConvertKey(nW, nH),
     }))
     scheduleAutosave()
   },
