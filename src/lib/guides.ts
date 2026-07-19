@@ -11,6 +11,7 @@ export interface GuideStep {
 export const GUIDES: Record<Screen, GuideStep[]> = {
   home: [],
   projects: [],
+  render3d: [],
 
   convert: [
     {

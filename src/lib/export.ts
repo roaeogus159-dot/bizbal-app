@@ -352,31 +352,58 @@ export function dateStamp(): string {
   return `${String(d.getFullYear()).slice(2)}${p(d.getMonth() + 1)}${p(d.getDate())}`
 }
 
-/** 공유시트는 모바일(iOS/Android)에서만 — 데스크톱 Chrome은 OS 공유창이 떠서 다운로드를 막음 */
+/** 공유시트를 쓸 기기인가? (모바일=공유시트 / 데스크톱=다운로드)
+ *  ⚠️ iPadOS 13+ 사파리는 자신을 'Macintosh'로 신고하므로 UA만으론 아이패드를 못 잡는다.
+ *  → 터치 지원(maxTouchPoints)까지 함께 확인해 아이패드를 모바일로 인식. */
 export function shouldUseShare(): boolean {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+  const ua = navigator.userAgent
+  if (/iPhone|iPod|Android/i.test(ua)) return true
+  if (/iPad/i.test(ua)) return true
+  // Mac UA인데 멀티터치가 되면 = 아이패드 (진짜 맥은 maxTouchPoints 0)
+  if (navigator.maxTouchPoints > 1 && /Macintosh|Mac OS X/i.test(ua)) return true
+  return false
 }
 
-/** 파일들을 iOS 공유시트(사진 저장) 또는 다운로드로 저장 */
+/** 파일들을 iOS/iPadOS 공유시트(사진 저장) 또는 다운로드로 저장 */
 export async function saveFiles(items: { blob: Blob; name: string }[]): Promise<'shared' | 'downloaded'> {
   const files = items.map((i) => new File([i.blob], i.name, { type: 'image/png' }))
   const nav = navigator as Navigator & { canShare?: (d: ShareData) => boolean }
-  if (shouldUseShare() && nav.share && nav.canShare?.({ files })) {
-    try {
-      await nav.share({ files })
-      return 'shared'
-    } catch (e) {
-      // 사용자가 취소한 경우 등 → 다운로드 폴백하지 않고 조용히 종료
-      if ((e as Error).name === 'AbortError') return 'shared'
+
+  if (shouldUseShare() && nav.share) {
+    // ① 한 번에 전부 공유 (사진앱에 여러 장 저장)
+    if (nav.canShare?.({ files })) {
+      try {
+        await nav.share({ files })
+        return 'shared'
+      } catch (e) {
+        if ((e as Error).name === 'AbortError') return 'shared' // 사용자가 취소
+      }
+    } else if (files.length > 1) {
+      // ② 여러 파일 한 번에가 안 되면 하나씩 순차 공유 (마지막만 저장되는 문제 방지)
+      let anyShared = false
+      for (const f of files) {
+        if (!nav.canShare?.({ files: [f] })) continue
+        try {
+          await nav.share({ files: [f] })
+          anyShared = true
+        } catch (e) {
+          if ((e as Error).name === 'AbortError') return anyShared ? 'shared' : 'downloaded'
+        }
+      }
+      if (anyShared) return 'shared'
     }
   }
+
+  // ③ 데스크톱: 다운로드 (사파리 다중 다운로드 이슈 회피 위해 간격 확보)
   for (const { blob, name } of items) {
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = name
+    document.body.appendChild(a)
     a.click()
-    await new Promise((r) => setTimeout(r, 350))
+    a.remove()
+    await new Promise((r) => setTimeout(r, 500))
     URL.revokeObjectURL(url)
   }
   return 'downloaded'

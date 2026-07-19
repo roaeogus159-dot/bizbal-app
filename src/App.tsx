@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense, lazy } from 'react'
 import { useProject, useSettings } from './state/store'
 import type { Screen } from './state/store'
 import { decodeImage } from './lib/convert'
@@ -11,6 +11,9 @@ import Result from './screens/Result'
 import Library from './screens/Library'
 import Projects from './screens/Projects'
 
+// 3D 렌더 화면은 three.js 청크가 커서 lazy 로드 (기존 앱 로딩엔 영향 없음)
+const Render3D = lazy(() => import('./screens/Render3D'))
+
 const TITLES: Record<Screen, string> = {
   home: '비즈발 도안 생성기',
   convert: '사진 변환',
@@ -18,6 +21,7 @@ const TITLES: Record<Screen, string> = {
   result: '도안 결과',
   library: '색상 라이브러리',
   projects: '내 작업 목록',
+  render3d: '3D 완성 미리보기',
 }
 
 const BACK: Partial<Record<Screen, Screen>> = {
@@ -69,7 +73,7 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const back = screen === 'library' ? prevScreen : BACK[screen]
+  const back = screen === 'library' || screen === 'render3d' ? prevScreen : BACK[screen]
 
   return (
     <div className="app">
@@ -108,6 +112,11 @@ export default function App() {
         {screen === 'result' && <Result />}
         {screen === 'library' && <Library />}
         {screen === 'projects' && <Projects />}
+        {screen === 'render3d' && (
+          <Suspense fallback={<p className="pad muted">3D 미리보기 불러오는 중…</p>}>
+            <Render3D />
+          </Suspense>
+        )}
       </main>
       {guideOpen && GUIDES[screen].length > 0 && (
         <GuideTour steps={GUIDES[screen]} onClose={() => setGuideOpen(false)} />

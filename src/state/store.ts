@@ -109,7 +109,7 @@ export const useSettings = create<SettingsState>()(
 
 // ---------- 프로젝트 상태 (메모리) ----------
 
-export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects'
+export type Screen = 'home' | 'convert' | 'editor' | 'result' | 'library' | 'projects' | 'render3d'
 export type Tool = 'pan' | 'point' | 'brush' | 'bucket' | 'magic' | 'eyedrop' | 'rowcol' | 'paste'
 
 // 칸 편집 (같은 크기 안에서 색만 바뀜)

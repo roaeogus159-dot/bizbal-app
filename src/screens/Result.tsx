@@ -88,8 +88,13 @@ export default function Result() {
 
   const saveGroup = async (files: OutFile[]) => {
     const how = await saveFiles(files.map(({ blob, name }) => ({ blob, name })))
-    setSavedMsg(how === 'shared' ? '공유 시트에서 "이미지 저장"을 누르면 사진앱에 저장됩니다.' : '다운로드 폴더에 저장했습니다.')
-    setTimeout(() => setSavedMsg(''), 4000)
+    const many = files.length > 1
+    setSavedMsg(
+      how === 'shared'
+        ? `공유 창에서 "${many ? '이미지 저장' : '이미지 저장'}"을 누르면 ${many ? `사진앱에 ${files.length}장이 한 번에` : '사진앱에'} 저장돼요.`
+        : `다운로드했어요 (파일 앱 > 다운로드). ${many ? `${files.length}개 파일` : ''}`,
+    )
+    setTimeout(() => setSavedMsg(''), 5000)
   }
 
   const all = [...(color ? [color] : []), ...prints, ...strands]
