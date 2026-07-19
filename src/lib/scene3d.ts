@@ -4,6 +4,7 @@
 // - 시나리오 3종: 창문(역광) / 벽면(천장 면광원, 벽색 지정) / 스튜디오(3점).
 import * as THREE from 'three'
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js'
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js'
 
 /** 상/하 색 그라데이션 equirect 환경맵 (하늘 느낌) — IBL 반사·투과용 */
 function gradientEquirect(top: THREE.Color, bottom: THREE.Color, exponent = 1.6): THREE.DataTexture {
@@ -204,15 +205,29 @@ export function buildBeadCurtain(
   }
 }
 
-/** 시나리오별 조명·배경·환경맵 구성. 반환 dispose로 정리.
- *  환경맵은 pathtracer 호환 위해 equirect(GradientEquirectTexture)로 통일 — 실시간·패스트레이싱 공용. */
+/** 반사·투과 IBL용 환경맵 — RoomEnvironment를 PMREM 프리필터.
+ *  실내 소프트박스 반사가 들어가 유리·오로라 비즈에 사실적인 하이라이트가 생긴다.
+ *  (외부 HDRI 파일 불필요 → 오프라인·PWA 안전). renderer 1개당 1회 만들어 공유. */
+export function buildEnvironment(renderer: THREE.WebGLRenderer): { texture: THREE.Texture; dispose: () => void } {
+  const pmrem = new THREE.PMREMGenerator(renderer)
+  const room = new RoomEnvironment()
+  const rt = pmrem.fromScene(room, 0.04)
+  room.dispose()
+  pmrem.dispose()
+  return { texture: rt.texture, dispose: () => rt.dispose() }
+}
+
+/** 시나리오별 조명·배경 구성. 반환 dispose로 정리.
+ *  IBL(scene.environment)은 공용 envTex(RoomEnvironment PMREM). 배경은 시나리오별 그라데이션/색.
+ *  그림자: DirectionalLight(그림자 가능)를 키로 추가하고 바닥/벽이 receiveShadow. (RectAreaLight는 그림자 불가) */
 export function buildScenario(
   scene: THREE.Scene,
   _renderer: THREE.WebGLRenderer,
   kind: ScenarioKind,
   curtainH: number, // mm
   wallColor: string,
-): { dispose: () => void; env: THREE.Texture } {
+  envTex: THREE.Texture,
+): { dispose: () => void } {
   if (!uniformsInited) {
     RectAreaLightUniformsLib.init()
     uniformsInited = true
@@ -220,41 +235,61 @@ export function buildScenario(
   const objs: THREE.Object3D[] = []
   const disposables: { dispose: () => void }[] = []
 
-  // 환경맵 (반사·투과 IBL) — 시나리오별 하늘 그라데이션
-  let env: THREE.DataTexture
-  if (kind === 'window') {
-    env = gradientEquirect(new THREE.Color(0xfff2d8), new THREE.Color(0x2a2622))
-  } else if (kind === 'wall') {
-    const wc = new THREE.Color(wallColor)
-    env = gradientEquirect(new THREE.Color(0xffffff), wc.clone().multiplyScalar(0.7))
-  } else {
-    env = gradientEquirect(new THREE.Color(0xedeaf0), new THREE.Color(0xb2aeb8))
-  }
-  scene.environment = env
-  disposables.push(env)
+  // 반사·투과 IBL — 공용 RoomEnvironment(PMREM). 역광(window)은 은은하게.
+  scene.environment = envTex
+  scene.environmentIntensity = kind === 'window' ? 0.5 : 0.85
 
   const cy = curtainH / 2 // 비즈발 중심 y
 
+  // 그림자 캐스팅 키 라이트 (방향광). 정적 씬이라 카메라와 무관하게 안정적.
+  const addKey = (color: number, intensity: number, pos: [number, number, number], shadow = true) => {
+    const key = new THREE.DirectionalLight(color, intensity)
+    key.position.set(pos[0], pos[1], pos[2])
+    const tgt = new THREE.Object3D()
+    tgt.position.set(0, cy, 0)
+    scene.add(tgt); objs.push(tgt)
+    key.target = tgt
+    if (shadow) {
+      key.castShadow = true
+      key.shadow.mapSize.set(2048, 2048)
+      const s = curtainH * 1.15
+      key.shadow.camera.left = -s; key.shadow.camera.right = s
+      key.shadow.camera.top = s; key.shadow.camera.bottom = -s
+      key.shadow.camera.near = curtainH * 0.1
+      key.shadow.camera.far = curtainH * 8
+      key.shadow.bias = -0.0004
+      key.shadow.normalBias = curtainH * 0.02 // 구 표면 그림자 여드름 방지
+    }
+    scene.add(key); objs.push(key)
+  }
+  const addAmbient = (color: number, intensity: number) => {
+    const amb = new THREE.AmbientLight(color, intensity)
+    scene.add(amb); objs.push(amb) // objs에 넣어 시나리오 전환 시 제거(누적 방지)
+  }
+
   if (kind === 'window') {
     // 방 안쪽에서 창가에 걸린 비즈발을 역광으로 봄
-    scene.background = env
-    // 창(밝은 하늘) — 비즈발 뒤쪽의 큰 발광면
+    const bg = gradientEquirect(new THREE.Color(0xfff2d8), new THREE.Color(0x2a2622))
+    scene.background = bg; disposables.push(bg)
+    // 창(밝은 하늘) — 비즈발 뒤쪽의 큰 발광면(역광 + 투과 글로우 소스)
     const skyGeo = new THREE.PlaneGeometry(curtainH * 2.4, curtainH * 2.2)
     const skyMat = new THREE.MeshBasicMaterial({ color: 0xfff4dc })
     const sky = new THREE.Mesh(skyGeo, skyMat)
     sky.position.set(0, cy, -curtainH * 1.1)
     scene.add(sky); objs.push(sky); disposables.push(skyGeo, skyMat)
     // 창을 실제 광원으로 (역광)
-    const win = new THREE.RectAreaLight(0xfff2d8, 9, curtainH * 2, curtainH * 1.8)
+    const win = new THREE.RectAreaLight(0xfff2d8, 7, curtainH * 2, curtainH * 1.8)
     win.position.set(0, cy, -curtainH * 1.05)
     win.lookAt(0, cy, 0)
     scene.add(win); objs.push(win)
     // 앞쪽 약한 채움
-    const fill = new THREE.RectAreaLight(0xbfd0e6, 1.2, curtainH * 1.5, curtainH * 1.5)
+    const fill = new THREE.RectAreaLight(0xbfd0e6, 1.0, curtainH * 1.5, curtainH * 1.5)
     fill.position.set(curtainH * 0.6, cy, curtainH * 1.2)
     fill.lookAt(0, cy, 0)
     scene.add(fill); objs.push(fill)
-    scene.add(new THREE.AmbientLight(0x30302e, 0.6))
+    // 앞 위 약한 키(입체감; 뒤 배경엔 그림자 리시버가 없어 그림자 off)
+    addKey(0xfff0d0, 1.1, [curtainH * 0.4, cy + curtainH * 1.0, curtainH * 1.0], false)
+    addAmbient(0x30302e, 0.4)
   } else if (kind === 'wall') {
     // 벽 앞에 전시. 천장 조명. 눈높이에서 봄.
     const wc = new THREE.Color(wallColor)
@@ -274,30 +309,38 @@ export function buildScenario(
     floor.position.set(0, -cy - curtainH * 0.05, 0)
     floor.receiveShadow = true
     scene.add(floor); objs.push(floor); disposables.push(floorGeo, floorMat)
-    // 천장 면광원 — 실제 비율(천장 2.35m, 비즈발 중심 1.5m, 벽 앞 1m) → 입사각 ~43°
-    // 씬은 mm이므로 비즈발 중심 기준 상대 위치로 환산
-    const ceil = new THREE.RectAreaLight(0xfff6e8, 6, curtainH * 1.2, curtainH * 1.2)
+    // 천장 면광원(부드러운 채움) + 그림자용 방향광 — 입사각 ~43°
+    const ceil = new THREE.RectAreaLight(0xfff6e8, 4, curtainH * 1.2, curtainH * 1.2)
     ceil.position.set(0, cy + 850, 1000) // +0.85m 위, +1.0m 앞
     ceil.lookAt(0, cy, 0)
     scene.add(ceil); objs.push(ceil)
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35))
+    addKey(0xfff4e2, 2.4, [curtainH * 0.35, cy + curtainH * 1.0, curtainH * 0.9])
+    addAmbient(0xffffff, 0.22)
   } else {
-    // 스튜디오: 환경 그라데이션 배경 + 3점 소프트박스
-    scene.background = env
-    const key = new THREE.RectAreaLight(0xffffff, 6, curtainH, curtainH)
+    // 스튜디오: 그라데이션 배경 + 바닥(그림자 리시버) + 3점 소프트박스 + 그림자 키
+    const bg = gradientEquirect(new THREE.Color(0xedeaf0), new THREE.Color(0xb2aeb8))
+    scene.background = bg; disposables.push(bg)
+    const floorGeo = new THREE.PlaneGeometry(curtainH * 4, curtainH * 4)
+    const floorMat = new THREE.MeshStandardMaterial({ color: 0xdedbe2, roughness: 0.7 })
+    const floor = new THREE.Mesh(floorGeo, floorMat)
+    floor.rotation.x = -Math.PI / 2
+    floor.position.set(0, -cy - curtainH * 0.05, 0)
+    floor.receiveShadow = true
+    scene.add(floor); objs.push(floor); disposables.push(floorGeo, floorMat)
+    const key = new THREE.RectAreaLight(0xffffff, 4, curtainH, curtainH)
     key.position.set(-curtainH * 0.7, cy + curtainH * 0.5, curtainH * 0.9)
     key.lookAt(0, cy, 0); scene.add(key); objs.push(key)
-    const fillL = new THREE.RectAreaLight(0xeaf0ff, 2.5, curtainH, curtainH)
+    const fillL = new THREE.RectAreaLight(0xeaf0ff, 2.0, curtainH, curtainH)
     fillL.position.set(curtainH * 0.9, cy, curtainH * 0.8)
     fillL.lookAt(0, cy, 0); scene.add(fillL); objs.push(fillL)
-    const rim = new THREE.RectAreaLight(0xffffff, 5, curtainH * 1.2, curtainH * 0.4)
+    const rim = new THREE.RectAreaLight(0xffffff, 4, curtainH * 1.2, curtainH * 0.4)
     rim.position.set(0, cy + curtainH * 0.4, -curtainH * 0.9)
     rim.lookAt(0, cy, 0); scene.add(rim); objs.push(rim)
-    scene.add(new THREE.AmbientLight(0xffffff, 0.4))
+    addKey(0xffffff, 2.0, [-curtainH * 0.7, cy + curtainH * 0.9, curtainH * 0.8])
+    addAmbient(0xffffff, 0.3)
   }
 
   return {
-    env,
     dispose: () => {
       objs.forEach((o) => scene.remove(o))
       disposables.forEach((o) => o.dispose())

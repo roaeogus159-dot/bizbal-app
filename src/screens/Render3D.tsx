@@ -4,8 +4,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { useProject, useSettings } from '../state/store'
 import { fullPalette } from '../lib/palette'
-import { buildBeadCurtain, buildScenario } from '../lib/scene3d'
+import { buildBeadCurtain, buildScenario, buildEnvironment } from '../lib/scene3d'
 import type { ScenarioKind } from '../lib/scene3d'
+import { buildBlenderScript } from '../lib/blenderExport'
 import { saveFiles, dateStamp } from '../lib/export'
 
 type Phase = 'view' | 'rendering' | 'done'
@@ -51,6 +52,7 @@ export default function Render3D() {
     controls: OrbitControls
     curtain: ReturnType<typeof buildBeadCurtain>
     scen: ReturnType<typeof buildScenario> | null
+    env: ReturnType<typeof buildEnvironment>
     raf: number
     needsRender: boolean
     rendering: boolean
@@ -78,6 +80,8 @@ export default function Render3D() {
     renderer.setSize(cw, ch, false)
     renderer.toneMapping = THREE.ACESFilmicToneMapping
     renderer.toneMappingExposure = 1.0
+    renderer.shadowMap.enabled = true
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap // 부드러운 그림자
 
     const scene = new THREE.Scene()
     const curtain = buildBeadCurtain(grid, W, H, palette, diameterMm)
@@ -101,10 +105,11 @@ export default function Render3D() {
     controls.maxPolarAngle = Math.PI * 0.62
     controls.update()
 
-    const scen = buildScenario(scene, renderer, scenario, curtainH, wallColor)
+    const env = buildEnvironment(renderer)
+    const scen = buildScenario(scene, renderer, scenario, curtainH, wallColor, env.texture)
 
     const state = {
-      renderer, scene, camera, controls, curtain, scen,
+      renderer, scene, camera, controls, curtain, scen, env,
       raf: 0, needsRender: true, rendering: false, curtainH,
     }
     three.current = state
@@ -138,6 +143,7 @@ export default function Render3D() {
       ro.disconnect()
       scen.dispose()
       curtain.dispose()
+      env.dispose()
       controls.dispose()
       renderer.dispose()
       three.current = null
@@ -150,7 +156,7 @@ export default function Render3D() {
     const st = three.current
     if (!st || phase !== 'view') return
     st.scen?.dispose()
-    st.scen = buildScenario(st.scene, st.renderer, scenario, st.curtainH, wallColor)
+    st.scen = buildScenario(st.scene, st.renderer, scenario, st.curtainH, wallColor, st.env.texture)
     st.needsRender = true
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [scenario, wallColor])
@@ -243,6 +249,18 @@ export default function Render3D() {
     setTimeout(() => setSavedMsg(''), 4000)
   }
 
+  // PC의 무료 Blender에서 사진급으로 렌더할 스크립트(.py) 내보내기
+  const exportBlender = async () => {
+    if (!grid) return
+    const py = buildBlenderScript(grid, W, H, palette, diameterMm)
+    const blob = new Blob([py], { type: 'text/x-python' })
+    const how = await saveFiles([{ blob, name: `비즈발_blender_${dateStamp()}.py` }])
+    setSavedMsg(how === 'shared'
+      ? 'Blender 스크립트를 저장/전송했어요. PC로 옮겨 Blender에서 여세요.'
+      : 'Blender 스크립트(.py)를 저장했어요. PC의 Blender에서 열어 실행하세요.')
+    setTimeout(() => setSavedMsg(''), 6000)
+  }
+
   if (!grid) return <p className="pad">먼저 사진을 변환해 주세요.</p>
   if (!webglOk) {
     return (
@@ -307,7 +325,15 @@ export default function Render3D() {
               </div>
             </div>
             <p className="muted hint">
-              {(() => { const q = QUALITIES.find((x) => x.key === quality)!; return `${q.w}×${q.h} · ${q.ssaa}× 슈퍼샘플 · 물리기반 재질(투과·오로라)` })()}
+              {(() => { const q = QUALITIES.find((x) => x.key === quality)!; return `${q.w}×${q.h} · ${q.ssaa}× 슈퍼샘플 · 그림자·환경광(IBL) 물리기반 재질` })()}
+            </p>
+            <div className="seg-row r3d-blender">
+              <span>사진급</span>
+              <button className="btn-sm btn-secondary" onClick={exportBlender}>🎨 Blender로 내보내기</button>
+              <a className="muted lnk" href={`${import.meta.env.BASE_URL}blender-guide.png`} target="_blank" rel="noreferrer">여는 법 이미지</a>
+            </div>
+            <p className="muted hint">
+              더 사실적인 결과가 필요하면 PC의 무료 프로그램 <strong>Blender</strong>로 내보내 렌더하세요(아이패드는 위 렌더 사용).
             </p>
           </>
         )}
