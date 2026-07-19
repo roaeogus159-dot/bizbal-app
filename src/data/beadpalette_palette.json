@@ -1,0 +1,80 @@
+{
+  "meta": {
+    "store": "비즈팔레트(Bead Palette)",
+    "brand": "B",
+    "source_url": "https://smartstore.naver.com/beads_palette/products/10977741724",
+    "material": "유리(Glass)",
+    "product": "수정글라스 (Crystal Glass Round)",
+    "hex_note": "HEX는 상품 색상표 사진에서 근사 샘플링. 실물·조명에 따라 미세 차이 가능.",
+    "sizes_mm": [6, 8],
+    "pack": "1줄",
+    "counts": {
+      "semi": { "6": 120, "8": 90 },
+      "transparent": { "6": 65, "8": 45 },
+      "aurora": { "6": 65, "8": 45 },
+      "solid": { "6": 65, "8": 45 }
+    },
+    "price_per_strand": 2090,
+    "shipping": 2900,
+    "free_shipping": 30000,
+    "total": 38
+  },
+  "categories": [
+    {
+      "id": "semi",
+      "label": "반투명",
+      "colors": [
+        { "code": "B01", "name": "레드", "hex": "#CF2F3D", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B02", "name": "체리핑크", "hex": "#EE7BA2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B03", "name": "파스텔핑크", "hex": "#F1B6CF", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B04", "name": "코랄로즈", "hex": "#F2A6A6", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B05", "name": "자몽", "hex": "#B8443B", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B06", "name": "오렌지", "hex": "#EF8A39", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B07", "name": "살구", "hex": "#F3CEB4", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B08", "name": "피치", "hex": "#F5CAD0", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B09", "name": "옐로", "hex": "#F1BB22", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B10", "name": "레몬", "hex": "#EDE07E", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B11", "name": "애플민트", "hex": "#CEE7CB", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B12", "name": "라임", "hex": "#AAD84C", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B13", "name": "그린", "hex": "#2F9F54", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B14", "name": "블루그린", "hex": "#82CCC2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B15", "name": "민트그린", "hex": "#52C193", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B16", "name": "민트", "hex": "#BCE4D8", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B17", "name": "스카이", "hex": "#C6D0E3", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B18", "name": "아쿠아", "hex": "#4EC2E2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B19", "name": "블루", "hex": "#9DB4E2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B20", "name": "미드나잇블루", "hex": "#2C6E8F", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B21", "name": "네이비", "hex": "#294A68", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B22", "name": "라일락", "hex": "#E7DDEE", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B23", "name": "바이올렛", "hex": "#CB9CD9", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B24", "name": "퍼플", "hex": "#7D3BA2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B25", "name": "라이트그레이", "hex": "#D4D9D2", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B26", "name": "딥그레이", "hex": "#B6BBC0", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B27", "name": "커피브라운", "hex": "#B3781F", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B28", "name": "라떼", "hex": "#E6D5BA", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B29", "name": "오팔", "hex": "#DBE7D4", "category": "semi", "finish": "semi", "sizeMm": 8.0 },
+        { "code": "B30", "name": "화이트", "hex": "#EFF1ED", "category": "semi", "finish": "semi", "sizeMm": 8.0 }
+      ]
+    },
+    {
+      "id": "transparent",
+      "label": "투명",
+      "colors": [
+        { "code": "B31", "name": "투명", "hex": "#DDE5EA", "category": "transparent", "finish": "transparent", "sizeMm": 8.0 },
+        { "code": "B32", "name": "투명AB", "hex": "#E0E1ED", "category": "aurora", "finish": "aurora", "sizeMm": 8.0 },
+        { "code": "B33", "name": "투명레드", "hex": "#D6202B", "category": "transparent", "finish": "transparent", "sizeMm": 8.0 },
+        { "code": "B34", "name": "투명그린", "hex": "#2BA24B", "category": "transparent", "finish": "transparent", "sizeMm": 8.0 }
+      ]
+    },
+    {
+      "id": "solid",
+      "label": "불투명",
+      "colors": [
+        { "code": "B35", "name": "블랙", "hex": "#1B1B1D", "category": "solid", "finish": "opaque", "sizeMm": 8.0 },
+        { "code": "B36", "name": "그레이", "hex": "#B8BDC1", "category": "solid", "finish": "opaque", "sizeMm": 8.0 },
+        { "code": "B37", "name": "피치", "hex": "#F2CCBC", "category": "solid", "finish": "opaque", "sizeMm": 8.0 },
+        { "code": "B38", "name": "옐로", "hex": "#F3D21F", "category": "solid", "finish": "opaque", "sizeMm": 8.0 }
+      ]
+    }
+  ]
+}

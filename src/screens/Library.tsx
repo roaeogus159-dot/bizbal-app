@@ -1,34 +1,39 @@
-// 색상 라이브러리: 전체 색 보기 + 팔레트 사용 관리(일괄) + 커스텀 색 추가
+// 색상 라이브러리: 전체 색 보기 + 브랜드별 관리 + 팔레트 사용(일괄) + 커스텀 색 추가
 import { useMemo, useState } from 'react'
 import { useSettings } from '../state/store'
-import type { Category, Finish, CustomColor } from '../lib/palette'
-import { BASE_PALETTE, CATEGORY_LABELS } from '../lib/palette'
+import type { Category, Finish, CustomColor, Brand } from '../lib/palette'
+import { BASE_PALETTE, BEADPAL_PALETTE, CATEGORY_LABELS, BRANDS } from '../lib/palette'
 import BeadSwatch from '../components/BeadSwatch'
 
 const CATS: Category[] = ['solid', 'transparent', 'semi', 'aurora', 'custom']
 const FINISH_LABELS: Record<Finish, string> = {
   opaque: '불투명', transparent: '투명', semi: '반투명', aurora: '오로라',
 }
+// 은센(A) + 비즈팔레트(B) 전체 브랜드 색
+const BRAND_PALETTE = [...BASE_PALETTE, ...BEADPAL_PALETTE]
+type BrandFilter = 'all' | Brand
 
 export default function Library() {
   const s = useSettings()
   const [cat, setCat] = useState<Category>('solid')
+  const [brandFilter, setBrandFilter] = useState<BrandFilter>('all')
   const [query, setQuery] = useState('')
   const [addOpen, setAddOpen] = useState(false)
 
   const items = useMemo(() => {
-    const base = cat === 'custom'
+    let base = cat === 'custom'
       ? s.customColors.filter((c) => !c.deleted)
-      : BASE_PALETTE.filter((c) => c.category === cat)
+      : BRAND_PALETTE.filter((c) => c.category === cat && (brandFilter === 'all' || c.brand === brandFilter))
     const q = query.trim().toLowerCase()
-    if (!q) return base
-    return base.filter(
-      (c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q),
-    )
-  }, [cat, query, s.customColors])
+    if (q) {
+      base = base.filter((c) => c.name.toLowerCase().includes(q) || c.code.toLowerCase().includes(q))
+    }
+    return base
+  }, [cat, brandFilter, query, s.customColors])
 
   const catCodes = items.map((c) => c.code)
   const enabledCount = catCodes.filter((c) => !s.disabled[c]).length
+  const at4mm = s.diameterMm === 4
 
   return (
     <div className="library">
@@ -53,13 +58,13 @@ export default function Library() {
           <div className="lib-bulk" data-guide="bulk">
             <button
               className="btn-sm btn-secondary"
-              onClick={() => s.setCategoryEnabled(BASE_PALETTE.map((c) => c.code), true)}
+              onClick={() => s.setCategoryEnabled(BRAND_PALETTE.map((c) => c.code), true)}
             >
-              은센 전체 사용
+              전체 사용
             </button>
             <button
               className="btn-sm btn-secondary"
-              onClick={() => s.setCategoryEnabled(BASE_PALETTE.map((c) => c.code), false)}
+              onClick={() => s.setCategoryEnabled(BRAND_PALETTE.map((c) => c.code), false)}
             >
               전체 해제
             </button>
@@ -67,6 +72,28 @@ export default function Library() {
               ＋ 커스텀 색 추가
             </button>
           </div>
+          {/* 브랜드 범례 */}
+          <p className="muted hint brand-legend">
+            <strong>A</strong> = <a href={BRANDS.A.url} target="_blank" rel="noreferrer">{BRANDS.A.name}</a>
+            {' '}({BRANDS.A.material}·{BRANDS.A.sizesMm.join('/')}mm) &nbsp;·&nbsp;
+            <strong>B</strong> = <a href={BRANDS.B.url} target="_blank" rel="noreferrer">{BRANDS.B.name}</a>
+            {' '}({BRANDS.B.material}·{BRANDS.B.sizesMm.join('/')}mm)
+          </p>
+          {/* 브랜드 필터 */}
+          <div className="chips-row">
+            <span>브랜드</span>
+            {([['all', '전체'], ['A', 'A 은센'], ['B', 'B 비즈팔레트']] as [BrandFilter, string][]).map(([b, label]) => (
+              <button key={b} className={`chip ${brandFilter === b ? 'on' : ''}`} onClick={() => setBrandFilter(b)}>
+                {label}
+              </button>
+            ))}
+          </div>
+          {at4mm && (
+            <p className="muted hint brand-warn">
+              ⚠️ 지금 <strong>4mm</strong> 프로젝트예요. 비즈팔레트(B)는 6·8mm만 팔아서 <strong>변환에 사용되지 않아요</strong>.
+              6/8mm로 바꾸면 B 비즈도 쓸 수 있어요.
+            </p>
+          )}
         </div>
 
         <div className="cat-tabs" data-guide="cats">
@@ -90,8 +117,10 @@ export default function Library() {
             <span className="muted">({enabledCount}/{catCodes.length} 사용 중)</span>
           </label>
           <ul>
-            {items.map((c) => (
-              <li key={c.code} className="color-row">
+            {items.map((c) => {
+              const bUnavail = at4mm && c.brand === 'B'
+              return (
+              <li key={c.code} className={`color-row ${bUnavail ? 'row-unavail' : ''}`}>
                 <input
                   type="checkbox"
                   checked={!s.disabled[c.code]}
@@ -103,7 +132,7 @@ export default function Library() {
                   {c.name} <span className="muted">{c.code}</span>
                 </span>
                 <span className="muted finish-tag">
-                  {FINISH_LABELS[c.finish]} · {c.sizeMm}mm
+                  {bUnavail ? '4mm 미판매' : `${FINISH_LABELS[c.finish]} · ${c.sizeMm}mm`}
                 </span>
                 {cat === 'custom' && (
                   <button
@@ -116,7 +145,8 @@ export default function Library() {
                   </button>
                 )}
               </li>
-            ))}
+              )
+            })}
             {items.length === 0 && (
               <p className="muted pad">
                 {cat === 'custom' ? '아직 추가한 색이 없습니다. 다른 사이트에서 산 비즈도 추가해 보세요.' : '검색 결과가 없습니다.'}

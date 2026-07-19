@@ -392,7 +392,7 @@ export const useProject = create<ProjectState>()((set, get) => ({
     convertTimer = setTimeout(async () => {
       const s = useSettings.getState()
       const pal = fullPalette(s.customColors)
-      const idxs = enabledIndices(s.customColors, s.disabled)
+      const idxs = enabledIndices(s.customColors, s.disabled, s.diameterMm)
       if (idxs.length === 0) {
         set({ converting: false })
         return

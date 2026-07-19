@@ -69,7 +69,7 @@ export default function Editor() {
     const r = p.cellRgb[cell * 3], g = p.cellRgb[cell * 3 + 1], b = p.cellRgb[cell * 3 + 2]
     const lab: number[] = [0, 0, 0]
     rgbToLab(r, g, b, lab)
-    const idxs = enabledIndices(s.customColors, s.disabled)
+    const idxs = enabledIndices(s.customColors, s.disabled, s.diameterMm)
     const scored: [number, number][] = idxs.map((i) => {
       const pl: number[] = [0, 0, 0]
       const [pr, pg, pb] = [

@@ -79,7 +79,8 @@ export function strandLengths(
     const c = palette[idx]
     if (!c) return actualBeadMm(diameterMm, 'opaque')
     if (c.custom) return c.sizeMm // 커스텀 색: 사용자가 입력한 실제 지름
-    return actualBeadMm(diameterMm, c.finish)
+    if (c.brand === 'B') return diameterMm // 비즈팔레트(유리): 표기 지름 그대로
+    return actualBeadMm(diameterMm, c.finish) // 은센(아크릴): 종류별 실측 보정
   }
   const mm: number[] = []
   for (let x = 0; x < W; x++) {
