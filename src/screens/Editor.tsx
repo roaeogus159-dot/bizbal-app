@@ -512,6 +512,7 @@ export default function Editor() {
 
       <div className="bottom-bar" data-guide="actions">
         <button className="btn-secondary" onClick={() => p.go('convert')}>← 변환 설정</button>
+        <button className="btn-secondary" onClick={() => p.go('render3d')} title="완성된 비즈발 3D 미리보기">🌐 3D</button>
         <button className="btn-primary" onClick={() => p.go('result')}>💾 도안 저장</button>
       </div>
 

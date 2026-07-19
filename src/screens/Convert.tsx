@@ -348,6 +348,9 @@ export default function Convert() {
         <button className="btn-secondary" onClick={() => go('editor')} disabled={!grid}>
           ✏️ 세부 수정
         </button>
+        <button className="btn-secondary" onClick={() => go('render3d')} disabled={!grid} title="완성된 비즈발 3D 미리보기">
+          🌐 3D
+        </button>
         <button className="btn-primary" onClick={() => go('result')} disabled={!grid}>
           💾 도안 저장
         </button>
