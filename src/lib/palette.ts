@@ -99,7 +99,7 @@ export const BEADPAL_PALETTE: BeadColor[] = (
     finish: c.finish as Finish,
     sizeMm: c.sizeMm,
     brand: 'B' as Brand,
-    // 비즈팔레트는 크롭 사진 에셋이 없어 스와치(색)로 표시 (BeadSwatch가 자동 폴백)
+    photo: `${import.meta.env.BASE_URL}beads/${c.code}.jpg`, // 상품 색상표에서 크롭 (public/beads/B*.jpg)
   })),
 )
 
